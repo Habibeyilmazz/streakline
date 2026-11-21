@@ -52,11 +52,13 @@ function Shell() {
           </View>
         )}
 
-        {tab === 'Today' && <Today onOpen={(id) => setSheet({ kind: 'detail', id })} onAdd={() => setSheet({ kind: 'new' })} />}
-        {tab === 'Focus' && <Focus />}
-        {tab === 'Reflect' && <Reflect />}
-        {tab === 'Review' && <Review />}
-        {tab === 'Settings' && <Settings version={version} />}
+        <View role="main" style={{ flex: 1 }}>
+          {tab === 'Today' && <Today onOpen={(id) => setSheet({ kind: 'detail', id })} onAdd={() => setSheet({ kind: 'new' })} />}
+          {tab === 'Focus' && <Focus />}
+          {tab === 'Reflect' && <Reflect />}
+          {tab === 'Review' && <Review />}
+          {tab === 'Settings' && <Settings version={version} />}
+        </View>
 
         <View accessibilityRole="tablist" style={{ borderTopWidth: 1, borderColor: theme.line, backgroundColor: theme.surface, paddingBottom: insets.bottom }}>
           <View style={{ flexDirection: 'row', width: '100%', maxWidth: 560, alignSelf: 'center' }}>

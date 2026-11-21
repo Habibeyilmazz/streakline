@@ -32,7 +32,8 @@ const TYPE = {
 
 export function Txt({ variant = 'body', muted, color, style, ...rest }: TextProps & { variant?: keyof typeof TYPE; muted?: boolean; color?: string }) {
   const t = useTheme();
-  return <Text {...rest} style={[TYPE[variant], { color: color ?? (muted ? t.muted : t.ink) }, style]} />;
+  // A heading is level 1 unless told otherwise: without a level, browsers and checkers read it as level 2.
+  return <Text aria-level={rest.accessibilityRole === 'header' ? 1 : undefined} {...rest} style={[TYPE[variant], { color: color ?? (muted ? t.muted : t.ink) }, style]} />;
 }
 
 /** Pressable with pressed and disabled states. Role defaults to button. */
@@ -219,7 +220,7 @@ export function Sheet({ visible, title, onClose, children }: { visible: boolean;
     opener.current = null;
   };
   return (
-    <Modal visible={visible} animationType={animation.current} onRequestClose={onClose} onDismiss={refocus}>
+    <Modal visible={visible} animationType={animation.current} onRequestClose={onClose} onDismiss={refocus} aria-label={title}>
       <View style={{ flex: 1, backgroundColor: t.bg, paddingTop: insets.top, paddingBottom: insets.bottom }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 20, paddingRight: 8, minHeight: 56, width: '100%', maxWidth: 560, alignSelf: 'center' }}>
           <Txt variant="heading" accessibilityRole="header" numberOfLines={1} style={{ flex: 1 }}>{title}</Txt>
@@ -339,6 +340,7 @@ export function Heatmap({ weeks, cell, label }: { weeks: DayKey[][]; cell: (day:
       <ScrollView
         ref={scroll}
         horizontal
+        tabIndex={0} // keyboard: focus it and the arrow keys scroll back through the year
         showsHorizontalScrollIndicator={false}
         style={{ width: Math.max(0, columns * (CELL + GAP) - GAP), flexGrow: 0 }}
         onLayout={() => scroll.current?.scrollToEnd({ animated: false })}

@@ -55,7 +55,7 @@ export function HabitDetail({ habit, onEdit }: { habit: Habit; onEdit: () => voi
   return (
     <Page>
       <View style={{ gap: 4 }}>
-        <Txt variant="title" accessibilityRole="header">{habit.name}</Txt>
+        <Txt variant="title" accessibilityRole="header" aria-level={2}>{habit.name}</Txt>
         <Txt muted>{describeSchedule(habit.schedule)}{habit.reminder ? `, reminder at ${habit.reminder}` : ''}</Txt>
       </View>
 
