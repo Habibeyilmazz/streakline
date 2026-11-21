@@ -5,6 +5,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Reorder habits (round 7, feature)
+
+Picked by using the app: habits were listed in the order they were created, with no way to change it, and "Reorder habits" was on the roadmap.
+
+- Added: a Reorder button next to "Add a habit" on Today (shown with two or more active habits). It lists the active habits with move-up and move-down buttons (44 px, labelled "Move <name> up/down", disabled at the ends) and a Done button. Today, the Focus habit list and the weekly review follow the new order; the order is saved and survives a reload.
+- Logic: new reducer action `habit/move` (`by: -1 | 1`) swaps a habit with its nearest active neighbour; archived habits keep their place and are skipped. The order is the order of the `habits` array, so the data and backup format are unchanged (`BACKUP_VERSION` stays 1).
+- Tests: a reducer test (swap, ends, unknown id, archived habits), `habit/move` added to the random-action fuzz test, an e2e stage (move to the top, reload, move back). New README screenshot `reorder.png`; `today.png` and `today-dark.png` retaken (the new button row).
+- Not done on purpose: drag and drop (long-press drag needs a gesture library; up/down buttons are accessible and enough for a short list).
+- Reported gaps checked: the focus timer is still not shared between web tabs (a web-only limit, documented; a phone runs one instance). Still never run on a phone. No demo GIF. The security-review skill was not retried: this change adds no trust boundary (no new stored field, nothing imported).
+
 ### Launch pass (round 6)
 
 - Fixed (web build): two browser tabs overwrote each other's data, last write wins. A tab now adopts data saved by another tab (`storage` event, validated first). A running focus timer is still not shared between tabs. New e2e stage.
