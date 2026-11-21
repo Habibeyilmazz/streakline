@@ -159,7 +159,7 @@ export function parseBackup(text: string): ParseResult {
   if (text.length > MAX_BACKUP_CHARS) return { ok: false, error: 'The file is too large to be a Streakline backup.' };
   let raw: unknown;
   try {
-    raw = JSON.parse(text);
+    raw = JSON.parse(text.replace(/^\uFEFF/, '')); // a BOM is not valid JSON, but editors add one
   } catch {
     return { ok: false, error: 'The file is not valid JSON.' };
   }

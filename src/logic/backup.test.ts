@@ -140,3 +140,19 @@ describe('normalises what it accepts', () => {
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
   });
 });
+
+test('a backup saved with a byte-order mark (Windows editors add one) still imports', () => {
+  const r = parseBackup('﻿' + exportBackup(sample, new Date('2026-11-21T10:00:00Z')));
+  expect(r.ok && r.data).toEqual(sample);
+});
+
+test('unicode names and answers survive an export and import', () => {
+  const data: Data = {
+    ...sample,
+    habits: [{ ...sample.habits[0], name: 'Oku 📚 çğışö' }],
+    reflections: { '2026-11-20': { answers: ['日本語', '🙂', 'a\u0000b'] } },
+  };
+  const r = parseBackup(exportBackup(data, new Date()));
+  expect(r.ok && r.data.habits[0].name).toBe('Oku 📚 çğışö');
+  expect(r.ok && r.data.reflections['2026-11-20'].answers).toEqual(['日本語', '🙂', 'a\u0000b']);
+});
