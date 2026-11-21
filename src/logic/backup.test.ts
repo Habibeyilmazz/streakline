@@ -1,4 +1,4 @@
-import { exportBackup, parseBackup, validateData } from './backup';
+import { MAX_BACKUP_CHARS, exportBackup, parseBackup, validateData } from './backup';
 import { DEFAULT_SETTINGS, Data } from './types';
 
 const sample: Data = {
@@ -45,6 +45,12 @@ describe('rejects files that are not ours', () => {
     ['{"app":"streakline","version":1}', 'does not contain'],
     ['{"app":"streakline","version":1,"data":{}}', 'habits is missing'],
   ])('%s', (text, message) => expect(errorOf(text)).toContain(message));
+
+  test('an oversized file is refused before it is parsed', () => {
+    // The picker does not always report a size, so the parser enforces the limit itself.
+    const big = `{"app":"streakline","version":1,"data":{"habits":[]},"pad":"${'x'.repeat(MAX_BACKUP_CHARS)}"}`;
+    expect(errorOf(big)).toContain('too large');
+  });
 });
 
 describe('rejects malformed habits', () => {

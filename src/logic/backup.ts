@@ -22,6 +22,8 @@ import {
 // otherwise the app could save a state it cannot load again.
 
 export const BACKUP_VERSION = 1;
+// Years of heavy use export to well under 1 MB.
+export const MAX_BACKUP_CHARS = 20 * 1024 * 1024;
 // Wide enough that a phone with a badly wrong clock still writes days the next
 // launch can read back; narrow enough to bound the streak loops.
 const MIN_DAY = '1970-01-01';
@@ -152,6 +154,7 @@ export function exportBackup(data: Data, exportedAt: Date): string {
 export type ParseResult = { ok: true; data: Data } | { ok: false; error: string };
 
 export function parseBackup(text: string): ParseResult {
+  if (text.length > MAX_BACKUP_CHARS) return { ok: false, error: 'The file is too large to be a Streakline backup.' };
   let raw: unknown;
   try {
     raw = JSON.parse(text);
