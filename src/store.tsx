@@ -85,6 +85,21 @@ export function StoreProvider({ initial, children }: { initial: State; children:
     );
   }, [data, timer]);
 
+  // Web only: another tab saved new data. Adopt it instead of overwriting it with ours.
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== DATA_KEY || !e.newValue) return;
+      try {
+        dispatch({ type: 'data/replace', data: validateData(JSON.parse(e.newValue)) });
+      } catch {
+        // unreadable data from another tab is ignored; this tab keeps its own
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
+
   // Finish the timer when its end time passes, including after the app was suspended.
   const endsAt = timer?.endsAt ?? null;
   const haptics = data.settings.haptics;

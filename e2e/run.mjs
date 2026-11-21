@@ -331,6 +331,15 @@ try {
   await seen(text('Nothing to track yet.'));
   assert.equal(await page.evaluate(() => localStorage.getItem('streakline/unreadable')), damaged);
 
+  stage('a second tab saves a habit: the first tab shows it instead of overwriting it');
+  const other = await context.newPage();
+  await other.goto(`http://127.0.0.1:${PORT}/`);
+  await other.getByRole('button', { name: 'Add a habit', exact: true }).click();
+  await other.getByLabel('Name').fill('Made in tab two');
+  await other.getByRole('button', { name: 'Add habit', exact: true }).click();
+  await seen(page.getByText('Made in tab two'));
+  await other.close();
+
   assert.deepEqual(problems, []);
   console.log('e2e passed');
 } catch (e) {

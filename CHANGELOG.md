@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Launch pass (round 6)
+
+- Fixed (web build): two browser tabs overwrote each other's data, last write wins. A tab now adopts data saved by another tab (`storage` event, validated first). A running focus timer is still not shared between tabs. New e2e stage.
+- README: one-line pitch, an honest comparison with Loop Habit Tracker, Habitica and Streaks and when to use them instead, known limit for tabs, contributing section. Added CONTRIBUTING.md and issue templates.
+- Not done: still never run on a phone; the security-review skill was not retried. Restoring archived habits counting archived days as missed remains documented behaviour, not a bug. No demo GIF: the existing screenshots come from the real app.
+
 ### Reliability pass (round 5, tests)
 
 Tried to break the logic with odd input; most of it held.

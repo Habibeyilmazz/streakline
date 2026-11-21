@@ -3,6 +3,7 @@
 # Streakline
 
 An offline-first habit tracker and focus timer for iOS and Android, built with Expo.
+Check in with one tap, keep streaks that forgive a bad day, and see your year at a glance.
 Everything stays on your phone: no account, no server, no tracking.
 
 <p>
@@ -38,6 +39,16 @@ The phone and the computer must be on the same network; if they cannot reach eac
 Inside Expo Go, `expo-notifications` logs a warning that push notifications are not supported there. Streakline does not use push; it only schedules local notifications on the phone.
 
 No phone at hand? `npm run web` opens the same app in a browser at http://localhost:4120 (without notifications and haptics).
+
+## Compared with other apps
+
+Streakline is a small, readable, open-source project, not a polished product with years of development behind it. Honestly:
+
+- **Loop Habit Tracker** (Android, open source) is the established offline habit tracker, with a more mature scoring model, widgets and a long track record. Use it if you are on Android and want something proven.
+- **Habitica** and **Streaks** turn habits into a game or have a refined native iOS experience, with widgets and watch apps. Streakline has neither.
+- **Notion, a spreadsheet or paper** are fine if you only want a grid of ticks.
+
+Reasons to pick Streakline: one app for habits, a focus timer tied to a habit and an evening reflection; plain-count weekly review; a streak freeze; readable TypeScript with a tested logic module you can fork; and the fact that it has no backend at all. Reasons not to: it has not been run on a physical phone yet (see below), and it has no widgets, no sync between devices and no accounts.
 
 ## Features
 
@@ -117,6 +128,7 @@ Not verified: the app has **not yet been run on a physical phone or a simulator*
 - Weeks start on Monday.
 - Restoring an archived habit counts the days it spent archived as missed; there is no pause that excuses a stretch of days.
 - Import replaces all data; it does not merge.
+- Web build: a second tab picks up changes saved in the first, but a running focus timer is not shared between tabs. There is no sync between devices.
 - Reminder times are typed (`7:30` or `07:30`, 24-hour); there is no time picker.
 
 ## Roadmap
@@ -127,6 +139,10 @@ Not verified: the app has **not yet been run on a physical phone or a simulator*
 - Configurable first day of the week.
 - Reorder habits.
 - Move storage to expo-sqlite if data outgrows a single JSON document.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Bug reports from a real phone are the most useful thing right now.
 
 ## License
 
