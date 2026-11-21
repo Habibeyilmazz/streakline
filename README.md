@@ -118,7 +118,7 @@ CI runs all of the above, `expo-doctor`, and a production JavaScript bundle for 
 
 ## What has and has not been verified
 
-Verified by running it: the logic and theme (222 unit tests, in five time zones), the calls made to the notification API (7 tests against a mocked `expo-notifications`, not a phone), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, archive and restore, reorder, dark theme, delete, midnight rollover, damaged-data recovery), that the app bundles for iOS and Android, and that `npx expo start` in a fresh clone serves the Expo Go manifest and the iOS bundle.
+Verified by running it: the logic and theme (224 unit tests, in five time zones), the calls made to the notification API (7 tests against a mocked `expo-notifications`, not a phone), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, archive and restore, reorder, dark theme, delete, midnight rollover, damaged-data recovery), that the app bundles for iOS and Android, and that `npx expo start` in a fresh clone serves the Expo Go manifest and the iOS and Android bundles.
 
 Not verified: the app has **not yet been run on a physical phone or a simulator**. The parts that only exist on a phone (notifications, haptics, the share sheet for export, the native file picker for import, safe areas and keyboard behaviour) are written against the documented Expo SDK 58 APIs but are untested on a device. Please open an issue if something misbehaves.
 
@@ -130,7 +130,7 @@ Not verified: the app has **not yet been run on a physical phone or a simulator*
 - Weeks start on Monday.
 - Restoring an archived habit counts the days it spent archived as missed; there is no pause that excuses a stretch of days.
 - Import replaces all data; it does not merge.
-- Web build: a second tab picks up data and a focus timer saved in the first (the timer's countdown is kept per tab, but start, pause and stop carry over). If two tabs both finish the same timer in the same instant it can log two sessions. There is no sync between devices.
+- Web build: a second tab picks up data and a focus timer saved in the first (the timer's countdown is kept per tab, but start, pause and stop carry over). When both tabs finish the same timer it is logged once. There is no sync between devices.
 - Reminder times are typed (`7:30` or `07:30`, 24-hour); there is no time picker.
 
 ## Roadmap

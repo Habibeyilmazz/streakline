@@ -58,14 +58,14 @@ test('deleting a habit removes its records but keeps its focus minutes', () => {
   const s = run([
     { type: 'checkin/toggle', habitId: 'read', day: '2026-11-21' },
     { type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON },
-    { type: 'timer/finish', sessionId: 's1' },
+    { type: 'timer/finish' },
     { type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON },
     { type: 'habit/delete', id: 'read' },
   ], base);
   expect(s.data.habits).toEqual([]);
   expect(s.data.checkins).toEqual({});
   expect(s.data.freezes).toEqual({});
-  expect(s.data.sessions).toEqual([{ id: 's1', habitId: null, day: '2026-11-21', minutes: 25 }]);
+  expect(s.data.sessions).toEqual([{ id: expect.any(String), habitId: null, day: '2026-11-21', minutes: 25 }]);
   expect(s.timer?.habitId).toBeNull();
 });
 
@@ -86,15 +86,15 @@ test('moving a habit swaps it with its active neighbour, skipping archived habit
 
 describe('focus timer', () => {
   test('finishing a focus session logs it and checks the habit in', () => {
-    const s = run([{ type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON }, { type: 'timer/finish', sessionId: 's1' }], base);
+    const s = run([{ type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON }, { type: 'timer/finish' }], base);
     expect(s.timer).toBeNull();
-    expect(s.data.sessions).toEqual([{ id: 's1', habitId: 'read', day: '2026-11-21', minutes: 25 }]);
+    expect(s.data.sessions).toEqual([{ id: expect.any(String), habitId: 'read', day: '2026-11-21', minutes: 25 }]);
     expect(s.data.checkins.read).toEqual(['2026-11-21']);
   });
 
   test('a second session the same day does not duplicate the check-in', () => {
-    const one = [{ type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON }, { type: 'timer/finish', sessionId: 's1' }] as Action[];
-    const s = run([...one, { type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON + 3_600_000 }, { type: 'timer/finish', sessionId: 's2' }], base);
+    const one = [{ type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON }, { type: 'timer/finish' }] as Action[];
+    const s = run([...one, { type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON + 3_600_000 }, { type: 'timer/finish' }], base);
     expect(s.data.sessions).toHaveLength(2);
     expect(s.data.checkins.read).toEqual(['2026-11-21']);
   });
@@ -102,7 +102,7 @@ describe('focus timer', () => {
   test('the session belongs to the day it ended, not the day the app noticed', () => {
     // Starts 23:50, ends 00:15 the next day.
     const start = new Date(2026, 10, 21, 23, 50).getTime();
-    const s = run([{ type: 'timer/start', kind: 'focus', habitId: 'read', now: start }, { type: 'timer/finish', sessionId: 's1' }], base);
+    const s = run([{ type: 'timer/start', kind: 'focus', habitId: 'read', now: start }, { type: 'timer/finish' }], base);
     expect(s.data.sessions[0].day).toBe('2026-11-22');
     expect(s.data.checkins.read).toEqual(['2026-11-22']);
   });
@@ -111,7 +111,7 @@ describe('focus timer', () => {
     const s = run([
       { type: 'settings/set', patch: { autoCheckIn: false, focusMinutes: 50 } },
       { type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON },
-      { type: 'timer/finish', sessionId: 's1' },
+      { type: 'timer/finish' },
     ], base);
     expect(s.data.sessions[0].minutes).toBe(50);
     expect(s.data.checkins.read).toEqual([]);
@@ -120,10 +120,10 @@ describe('focus timer', () => {
   test('a break logs nothing; a paused timer cannot finish; stop discards', () => {
     const brk = run([{ type: 'timer/start', kind: 'break', habitId: 'read', now: NOON }], base);
     expect(brk.timer).toMatchObject({ kind: 'break', habitId: null, minutes: 5 });
-    expect(run([{ type: 'timer/finish', sessionId: 's' }], brk).data.sessions).toEqual([]);
+    expect(run([{ type: 'timer/finish' }], brk).data.sessions).toEqual([]);
 
     const paused = run([{ type: 'timer/start', kind: 'focus', habitId: null, now: NOON }, { type: 'timer/pause', now: NOON + 1000 }], base);
-    expect(run([{ type: 'timer/finish', sessionId: 's' }], paused)).toBe(paused);
+    expect(run([{ type: 'timer/finish' }], paused)).toBe(paused);
     expect(run([{ type: 'timer/stop' }], paused)).toMatchObject({ timer: null, data: { sessions: [] } });
   });
 
@@ -131,12 +131,12 @@ describe('focus timer', () => {
     const started = run([{ type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON }], base);
     const late = run([{ type: 'timer/pause', now: NOON + 25 * 60_000 }], started);
     expect(late).toBe(started);
-    expect(run([{ type: 'timer/finish', sessionId: 's1' }], late).data.sessions).toHaveLength(1);
+    expect(run([{ type: 'timer/finish' }], late).data.sessions).toHaveLength(1);
   });
 
   test('a focus session with no habit, or a deleted one, is still logged', () => {
-    const s = run([{ type: 'timer/start', kind: 'focus', habitId: 'ghost', now: NOON }, { type: 'timer/finish', sessionId: 's1' }], base);
-    expect(s.data.sessions).toEqual([{ id: 's1', habitId: null, day: '2026-11-21', minutes: 25 }]);
+    const s = run([{ type: 'timer/start', kind: 'focus', habitId: 'ghost', now: NOON }, { type: 'timer/finish' }], base);
+    expect(s.data.sessions).toEqual([{ id: expect.any(String), habitId: null, day: '2026-11-21', minutes: 25 }]);
   });
 });
 
@@ -146,7 +146,7 @@ test('a tampered stored timer cannot finish into data the app refuses to load', 
   for (const tampered of [{ ...saved, minutes: 2.5 }, { ...saved, endsAt: 1e20 }, { ...saved, endsAt: Date.UTC(2300, 0, 1) }, { ...saved, endsAt: 0 }]) {
     const timer = validateTimer(tampered);
     if (timer === null) continue; // refusing it outright is fine
-    const s = run([{ type: 'timer/finish', sessionId: 's1' }], { ...base, timer });
+    const s = run([{ type: 'timer/finish' }], { ...base, timer });
     expect(() => validateData(JSON.parse(JSON.stringify(s.data)))).not.toThrow();
   }
 });
@@ -206,11 +206,22 @@ describe('archive and restore', () => {
     expect(run([{ type: 'checkin/toggle', habitId: 'read', day: '2026-11-19' }], archived).data.checkins.read).toEqual(['2026-11-18', '2026-11-19']);
   });
 
+  test('two web tabs finishing the same timer log one session', () => {
+    const running = run([{ type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON }], base);
+    const tabA = run([{ type: 'timer/finish' }], running);
+    // Tab B adopts A's saved data before it hears that the timer stopped, then finishes too.
+    const tabB = run([{ type: 'data/adopt', data: tabA.data }, { type: 'timer/finish' }], running);
+    expect(tabB).toEqual(tabA);
+    expect(tabB.data.sessions).toHaveLength(1);
+    // Finishing at the same instant without hearing from each other gives identical data.
+    expect(run([{ type: 'timer/finish' }], running)).toEqual(tabA);
+  });
+
   test('a focus session that ends after its habit was archived logs minutes but no check-in', () => {
     const s = run([
       { type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON },
       { type: 'habit/archive', id: 'read', day: '2026-11-21' },
-      { type: 'timer/finish', sessionId: 's1' },
+      { type: 'timer/finish' },
     ], base);
     expect(s.data.sessions).toHaveLength(1);
     expect(s.data.checkins.read).toEqual([]);

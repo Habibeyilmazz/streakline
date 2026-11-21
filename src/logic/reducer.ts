@@ -22,7 +22,7 @@ export type Action =
   | { type: 'timer/pause'; now: number }
   | { type: 'timer/resume'; now: number }
   | { type: 'timer/stop' }
-  | { type: 'timer/finish'; sessionId: string }
+  | { type: 'timer/finish' }
   | { type: 'data/replace'; data: Data }
   /** Another web tab saved: take its data or its timer, leave the other part alone. */
   | { type: 'data/adopt'; data: Data }
@@ -131,13 +131,16 @@ export function reducer(state: State, action: Action): State {
       // The session belongs to the day it ended on, even if the app only noticed later.
       const day = dayKey(new Date(timer.endsAt));
       const { habitId, minutes } = timer;
+      // The end instant names the session, so two web tabs finishing the same timer log it once.
+      const id = 's' + timer.endsAt.toString(36);
+      if (data.sessions.some((s) => s.id === id)) return { ...state, timer: null };
       const habit = data.habits.find((h) => h.id === habitId);
       const checkIn = habitId !== null && data.settings.autoCheckIn && !!habit && !archivedBy(habit, day);
       return {
         timer: null,
         data: {
           ...data,
-          sessions: [...data.sessions, { id: action.sessionId, habitId, day, minutes }].slice(-MAX_SESSIONS),
+          sessions: [...data.sessions, { id, habitId, day, minutes }].slice(-MAX_SESSIONS),
           ...(checkIn && {
             checkins: { ...data.checkins, [habitId]: added(data.checkins[habitId], day) },
             freezes: { ...data.freezes, [habitId]: (data.freezes[habitId] ?? []).filter((d) => d !== day) },

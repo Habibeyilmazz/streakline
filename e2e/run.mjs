@@ -368,6 +368,24 @@ try {
   await tab('Focus').click();
   await button('Stop').click();
 
+  stage('two tabs finishing the same timer log one session');
+  {
+    // Its own context, so both tabs share one fake clock and finish at the same instant.
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, timezoneId: 'UTC' });
+    await ctx.clock.install({ time: new Date(`${TODAY}T12:00:00Z`) });
+    const [a, b] = [await ctx.newPage(), await ctx.newPage()];
+    for (const p of [a, b]) {
+      await p.goto(`http://127.0.0.1:${PORT}/`);
+      await p.getByRole('tab', { name: /^Focus/ }).click();
+    }
+    await a.getByRole('button', { name: 'Start 25 minute focus' }).click();
+    await b.getByText('Focusing').waitFor();
+    await ctx.clock.runFor(25 * 60_000 + 2000);
+    for (const p of [a, b]) await p.getByText('Today: 25 min in 1 session').waitFor({ timeout: 5000 });
+    assert.equal(await a.evaluate(() => JSON.parse(localStorage.getItem('streakline/data/v1')).sessions.length), 1);
+    await ctx.close();
+  }
+
   assert.deepEqual(problems, []);
   console.log('e2e passed');
 } catch (e) {

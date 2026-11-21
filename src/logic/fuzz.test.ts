@@ -26,7 +26,7 @@ function randomAction(r: () => number, step: number): Action {
     case 6: return { type: 'freeze/toggle', habitId: id, day, today: TODAY };
     case 7: return { type: 'reflection/save', day, answers: [pick(['', 'x', ' y ']), '', 'z'] };
     case 8: return { type: 'timer/start', kind: 'focus', habitId: pick([id, null]), now: Date.UTC(2026, 2, 29, 10) + step };
-    case 9: return { type: 'timer/finish', sessionId: 's' + step };
+    case 9: return { type: 'timer/finish' };
     case 10: return { type: 'timer/pause', now: Date.UTC(2026, 2, 29, 10) + step };
     case 11: return { type: 'habit/move', id, by: pick([-1, 1] as const) };
     default: return { type: 'timer/resume', now: Date.UTC(2026, 2, 29, 10) + step };

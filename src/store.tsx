@@ -108,7 +108,7 @@ export function StoreProvider({ initial, children }: { initial: State; children:
     if (endsAt === null) return;
     const check = () => {
       if (timer && isFinished(timer, Date.now())) {
-        dispatch({ type: 'timer/finish', sessionId: newId() });
+        dispatch({ type: 'timer/finish' });
         success(haptics);
       }
     };
