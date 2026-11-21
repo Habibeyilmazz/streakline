@@ -33,11 +33,14 @@ async function apply(plan: PlannedReminder[], timerEnd: OneOff | null, ask: bool
   }
   if (!(await ensurePermission(ask))) return;
   const channelId = 'reminders';
-  for (const { title, body, hour, minute, weekday } of plan) {
+  for (const { title, body, hour, minute, weekday, date } of plan) {
+    const once = date === undefined ? undefined : new Date(+date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10), hour, minute).getTime();
+    if (once !== undefined && once <= Date.now()) continue; // already past: the app restores the habit on its own
     await Notifications.scheduleNotificationAsync({
       content: { title, body },
-      trigger:
-        weekday === undefined
+      trigger: once !== undefined
+        ? { type: Notifications.SchedulableTriggerInputTypes.DATE, date: once, channelId }
+        : weekday === undefined
           ? { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute, channelId }
           : // Expo counts weekdays from 1 = Sunday.
             { type: Notifications.SchedulableTriggerInputTypes.WEEKLY, weekday: weekday + 1, hour, minute, channelId },

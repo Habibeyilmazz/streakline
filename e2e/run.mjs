@@ -415,6 +415,38 @@ try {
     await ctx.close();
   }
 
+  stage('pause for a week: the habit comes back by itself, with its streak, while the app stays open');
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, timezoneId: 'UTC', locale: 'en-GB' });
+    await ctx.clock.install({ time: new Date(`${TODAY}T12:00:00Z`) });
+    await ctx.addInitScript((raw) => localStorage.getItem('streakline/data/v1') || localStorage.setItem('streakline/data/v1', raw), JSON.stringify(fixture(TODAY).data));
+    const p = await ctx.newPage();
+    p.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
+    await p.goto(`http://127.0.0.1:${PORT}/`);
+    await p.getByRole('button', { name: /Practice guitar.*Open details/ }).click();
+    await p.getByLabel('Current streak: 2 days').waitFor();
+    await p.getByRole('button', { name: 'Pause a week', exact: true }).click();
+    await p.getByLabel('Streak when paused: 2 days').waitFor({ timeout: 5000 });
+    await p.getByText(/comes back by itself on Saturday 28 Nov/).waitFor();
+    await p.waitForTimeout(400);
+    if (shots) await p.screenshot({ path: `${shots}/paused-detail.png` });
+    await p.getByRole('button', { name: 'Close' }).first().click();
+    await p.getByRole('button', { name: 'Practice guitar, paused, back 28 Nov. Open details' }).waitFor();
+    await p.getByRole('heading', { name: 'Paused', exact: true }).waitFor();
+    // The page stays open; the day check (every 20 s) notices the new day.
+    await ctx.clock.fastForward(7 * 86_400_000);
+    await ctx.clock.runFor(21_000);
+    await p.getByRole('button', { name: /^Practice guitar.*Open details/ }).first().waitFor({ timeout: 5000 });
+    assert.equal(await p.getByRole('heading', { name: 'Paused', exact: true }).count(), 0);
+    const stored = await p.evaluate(() => JSON.parse(localStorage.getItem('streakline/data/v1')).habits.find((h) => h.id === 'guitar'));
+    assert.equal(stored.archivedOn, undefined);
+    assert.equal(stored.resumeOn, undefined);
+    assert.deepEqual(stored.pauses, [{ from: '2026-11-21', to: '2026-11-27' }]);
+    await p.getByRole('button', { name: /^Practice guitar.*Open details/ }).first().click();
+    await p.getByLabel('Current streak: 2 days').waitFor({ timeout: 5000 }); // without the pause: 0
+    await ctx.close();
+  }
+
   assert.deepEqual(problems, []);
   console.log('e2e passed');
 } catch (e) {

@@ -72,6 +72,9 @@ describe('rejects malformed habits', () => {
     [{ reminder: 730 }, 'time like'],
     [{ archivedOn: '2026-13-01' }, 'archive date'],
     [{ archivedOn: false }, 'archive date'],
+    [{ archivedOn: '2026-11-20', resumeOn: '2026-11-31' }, 'resume date'],
+    [{ resumeOn: '2026-11-27' }, 'resumes without being archived'],
+    [{ archivedOn: '2026-11-20', resumeOn: '2026-11-20' }, 'resumes without being archived'],
     [{ pauses: {} }, 'list of at most'],
     [{ pauses: Array(1001).fill({ from: '2026-11-01', to: '2026-11-02' }) }, 'list of at most'],
     [{ pauses: [{ from: '2026-11-01' }] }, 'pause end'],
@@ -138,6 +141,13 @@ describe('normalises what it accepts', () => {
     expect(parseBackup(exportBackup(archived, new Date()))).toEqual({ ok: true, data: validateData(archived) });
     expect(validateData(archived).habits[0].archivedOn).toBe('2026-11-20');
     expect(validateData({ habits: [{ ...sample.habits[0], archivedOn: null }] }).habits[0]).toEqual(sample.habits[0]);
+  });
+
+  test('a resume date survives a round trip; null or missing means none', () => {
+    const paused = { ...sample, habits: [{ ...sample.habits[0], archivedOn: '2026-11-20', resumeOn: '2026-11-27' }] };
+    expect(parseBackup(exportBackup(paused, new Date()))).toEqual({ ok: true, data: validateData(paused) });
+    expect(validateData(paused).habits[0].resumeOn).toBe('2026-11-27');
+    expect(validateData({ habits: [{ ...sample.habits[0], archivedOn: '2026-11-20', resumeOn: null }] }).habits[0]).not.toHaveProperty('resumeOn');
   });
 
   test('pauses are sorted and overlapping ones joined; null or missing means none', () => {

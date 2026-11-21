@@ -73,6 +73,9 @@ export function StoreProvider({ initial, children }: { initial: State; children:
   const today = useToday();
   const { data, timer } = state;
 
+  // A paused habit comes back once its resume day arrives (also after an import or another tab's save).
+  useEffect(() => dispatch({ type: 'habit/resumeDue', today }), [today, data.habits]);
+
   // Data and timer are written together: if a finished session were saved but
   // the cleared timer were not, the next launch would log the session twice.
   useEffect(() => {

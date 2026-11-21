@@ -9,10 +9,12 @@ export type State = { data: Data; timer: Timer | null };
 export type Action =
   | { type: 'habit/save'; habit: Habit }
   | { type: 'habit/delete'; id: string }
-  /** Hide the habit from `day` on, keeping its history. */
-  | { type: 'habit/archive'; id: string; day: DayKey }
+  /** Hide the habit from `day` on, keeping its history. With `resumeOn` (after `day`) it comes back by itself that day. */
+  | { type: 'habit/archive'; id: string; day: DayKey; resumeOn?: DayKey }
   /** Track it again from `day`; the days it was archived become a pause. */
   | { type: 'habit/restore'; id: string; day: DayKey }
+  /** Restore every habit whose `resumeOn` has come, as of its `resumeOn`. */
+  | { type: 'habit/resumeDue'; today: DayKey }
   /** Swap the habit with the next active (not archived) habit above (-1) or below (1) it. */
   | { type: 'habit/move'; id: string; by: -1 | 1 }
   | { type: 'checkin/toggle'; habitId: string; day: DayKey }
@@ -68,15 +70,21 @@ export function reducer(state: State, action: Action): State {
     case 'habit/restore': {
       const habit = data.habits.find((h) => h.id === action.id);
       if (!habit) return state;
-      const { archivedOn, ...active } = habit;
+      const { archivedOn, resumeOn, ...active } = habit;
       const last = addDays(action.day, -1);
+      const until = action.type === 'habit/archive' ? action.resumeOn : undefined;
       const next =
         action.type === 'habit/archive'
-          ? { ...active, archivedOn: action.day }
+          ? { ...active, archivedOn: action.day, ...(until !== undefined && until > action.day && { resumeOn: until }) }
           : archivedOn !== undefined && archivedOn <= last
             ? { ...active, pauses: mergePauses([...(habit.pauses ?? []), { from: archivedOn, to: last }]) }
             : active;
       return withData({ habits: data.habits.map((h) => (h === habit ? next : h)) });
+    }
+
+    case 'habit/resumeDue': {
+      const due = data.habits.filter((h) => h.archivedOn !== undefined && h.resumeOn !== undefined && h.resumeOn <= action.today);
+      return due.reduce((s, h) => reducer(s, { type: 'habit/restore', id: h.id, day: h.resumeOn! }), state);
     }
 
     case 'habit/move': {

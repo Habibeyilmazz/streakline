@@ -163,18 +163,20 @@ export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: 
 
       {archived.length > 0 && !ordering && (
         <View>
-          <Txt variant="heading" muted accessibilityRole="header" aria-level={2}>Archived</Txt>
+          <Txt variant="heading" muted accessibilityRole="header" aria-level={2}>
+            {archived.every((h) => h.resumeOn) ? 'Paused' : archived.some((h) => h.resumeOn) ? 'Paused and archived' : 'Archived'}
+          </Txt>
           {archived.map((habit, i) => (
             <View key={habit.id}>
               {i > 0 && <Rule />}
               <Tap
                 onPress={() => onOpen(habit.id)}
-                accessibilityLabel={`${habit.name}, archived ${dayMonthShort(habit.archivedOn!)}. Open details`}
+                accessibilityLabel={`${habit.name}, ${habit.resumeOn ? `paused, back ${dayMonthShort(habit.resumeOn)}` : `archived ${dayMonthShort(habit.archivedOn!)}`}. Open details`}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 48, paddingVertical: 10 }}
               >
                 <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: t.habit[habit.color] }} />
                 <Txt numberOfLines={1} style={{ flex: 1 }}>{habit.name}</Txt>
-                <Txt variant="small" muted>Since {dayMonthShort(habit.archivedOn!)}</Txt>
+                <Txt variant="small" muted>{habit.resumeOn ? `Back ${dayMonthShort(habit.resumeOn)}` : `Since ${dayMonthShort(habit.archivedOn!)}`}</Txt>
               </Tap>
             </View>
           ))}

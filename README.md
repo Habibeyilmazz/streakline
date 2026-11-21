@@ -21,6 +21,9 @@ Everything stays on your phone: no account, no server, no tracking.
   <img src="docs/screenshots/reorder.png" width="250" alt="Reordering habits: each habit has move up and move down buttons">
   <img src="docs/screenshots/paused-line.png" width="250" alt="Today after restoring a paused habit: Practice guitar's streak line shows a dotted stretch for the paused days, and the streak is kept">
 </p>
+<p>
+  <img src="docs/screenshots/paused-detail.png" width="250" alt="A habit paused for a week: its streak when paused stays, and it says it comes back by itself on Saturday 28 Nov, with a Restore now button">
+</p>
 
 The screenshots are taken from the running app (its web build, at 390x844) by the end-to-end test, using synthetic data.
 
@@ -62,7 +65,7 @@ Reasons to pick Streakline: one app for habits, a focus timer tied to a habit an
 - **Evening reflection**: three prompts, about two minutes.
 - **Weekly review** with plain counts: kept, missed, still open, frozen, focus minutes, reflections, and the week before for comparison.
 - **Local notifications**: a reminder time per habit, one for the reflection, and one when the timer ends. A phone keeps at most 60 repeating reminders per app (a habit on certain days needs one per day); past that, Settings and the habit's editor name the habits that miss theirs.
-- **Archive or pause** a habit: it leaves Today, reminders, the focus timer and the weekly review from that day on, and its history, streaks and heatmap stay. Archived habits are listed at the bottom of Today; open one to restore it. Restoring excuses the days it was archived, so a week away or ill does not cost you the streak. Deleting is still there for habits you want gone with their history.
+- **Pause or archive** a habit: it leaves Today, reminders, the focus timer and the weekly review from that day on, and its history, streaks and heatmap stay. **Pause** it for 3 days, a week or 2 weeks and it comes back by itself on the day after (with one reminder that day, if it has a reminder time); **archive** it and it stays away until you restore it. Both are listed at the bottom of Today; open one to restore it early. Either way the days away are excused, so a week away or ill does not cost you the streak. Deleting is still there for habits you want gone with their history.
 - **Reorder** habits with Reorder on Today: move each one up or down. Today (due habits first), the focus timer's list and the weekly review follow that order. The buttons work with a screen reader and a keyboard; there is no drag and drop.
 - **Backup**: export everything as one JSON file, import it on another device. Imports are validated and ask before replacing anything.
 - Light and dark theme, haptics, screen-reader labels throughout.
@@ -98,9 +101,9 @@ e2e/                   Playwright scripts that drive the web build (run.mjs: beh
 
 **Storage.** All data is one JSON document in AsyncStorage (on the web build: the browser's local storage). It is validated on every load. If it fails validation, the app shows a recovery screen that lets you save a copy of the raw data before you choose to start empty; it never overwrites it silently.
 
-**Archiving and pauses.** An archived habit stores the day it was archived (`archivedOn`). From that day on it counts as not existing yet: never due, never missed, not in the review or the all-habits heatmap; its streak is the one it had when archived. Restoring removes the date and stores the archived days as a pause (`pauses`, from the archive day to the day before the restore). Paused days bridge a streak like frozen days, without counting; an "N times a week" week that was partly paused asks only for the days left, and a fully paused week is skipped. You can still backfill a check-in on a paused day; you cannot freeze one. Restoring on the day you archived adds no pause. A habit restored before pauses existed has no pause stored, so those archived days stay missed.
+**Archiving and pauses.** An archived habit stores the day it was archived (`archivedOn`). From that day on it counts as not existing yet: never due, never missed, not in the review or the all-habits heatmap; its streak is the one it had when archived. Restoring removes the date and stores the archived days as a pause (`pauses`, from the archive day to the day before the restore). Paused days bridge a streak like frozen days, without counting; an "N times a week" week that was partly paused asks only for the days left, and a fully paused week is skipped. You can still backfill a check-in on a paused day; you cannot freeze one. Restoring on the day you archived adds no pause. A pause with an end date is an archive with `resumeOn`: when that day comes (checked at launch and every 20 seconds while the app is open) the habit is restored as of `resumeOn`, so the paused days end the day before, even if the app was first opened days later. A habit restored before pauses existed has no pause stored, so those archived days stay missed.
 
-**Backup format.** `{ "app": "streakline", "version": 1, "exportedAt": "...", "data": { habits, checkins, freezes, sessions, reflections, settings } }`. The order of `habits` is the order on screen. A habit may carry `archivedOn` and `pauses` (`[{ "from": "2026-11-21", "to": "2026-11-23" }]`, sorted, overlapping ones joined, at most 1000); backups without them load unchanged. Importing replaces what is on the device, after showing what is in the file and asking.
+**Backup format.** `{ "app": "streakline", "version": 1, "exportedAt": "...", "data": { habits, checkins, freezes, sessions, reflections, settings } }`. The order of `habits` is the order on screen. A habit may carry `archivedOn`, `resumeOn` (only with `archivedOn`, and after it) and `pauses` (`[{ "from": "2026-11-21", "to": "2026-11-23" }]`, sorted, overlapping ones joined, at most 1000); backups without them load unchanged. Importing replaces what is on the device, after showing what is in the file and asking.
 
 ## Development
 
@@ -121,7 +124,7 @@ CI runs all of the above, `expo-doctor`, and a production JavaScript bundle for 
 
 ## What has and has not been verified
 
-Verified by running it: the logic and theme (247 unit tests (242 run on a plain `npm test`; the other 5 each need one time zone), in five time zones and on a small stack), the calls made to the notification API (7 tests against a mocked `expo-notifications`, not a phone), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, archive and restore, reorder, dark theme, delete, midnight rollover, damaged-data recovery, restoring a habit three days later keeps its streak), that the app bundles for iOS and Android, and that `npx expo start` in a fresh clone serves the Expo Go manifest and the iOS and Android bundles.
+Verified by running it: the logic and theme (247 unit tests (242 run on a plain `npm test`; the other 5 each need one time zone), in five time zones and on a small stack), the calls made to the notification API (8 tests against a mocked `expo-notifications`, not a phone), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, archive and restore, reorder, dark theme, delete, midnight rollover, damaged-data recovery, restoring a habit three days later keeps its streak, a habit paused for a week comes back by itself with its streak), that the app bundles for iOS and Android, and that `npx expo start` in a fresh clone serves the Expo Go manifest and the iOS and Android bundles.
 
 Not verified: the app has **not yet been run on a physical phone or a simulator**. The parts that only exist on a phone (notifications, haptics, the share sheet for export, the native file picker for import, safe areas and keyboard behaviour) are written against the documented Expo SDK 58 APIs but are untested on a device. Please open an issue if something misbehaves.
 
@@ -131,7 +134,7 @@ Not verified: the app has **not yet been run on a physical phone or a simulator*
 - On Android the timer-end notification is scheduled without the exact-alarm permission, so the system may deliver it a little late.
 - Changing a habit's schedule re-reads its whole history under the new schedule.
 - Weeks start on Monday.
-- A pause starts when you archive and ends when you restore; there is no "pause until" date that restores the habit by itself. The 14-day streak line on Today draws them as a dotted stretch.
+- A pause ends by itself only in the app: a phone cannot run it in the background, so the habit is restored (and its daily reminders come back) the next time you open the app on or after its return day. The one reminder on that day is scheduled ahead and fires either way. Pause lengths are 3, 7 or 14 days; there is no date picker. The 14-day streak line on Today draws paused days as a dotted stretch.
 - Import replaces all data; it does not merge.
 - Web build: a second tab picks up data and a focus timer saved in the first (the timer's countdown is kept per tab, but start, pause and stop carry over). When both tabs finish the same timer it is logged once. There is no sync between devices.
 - Reminder times are typed (`7:30` or `07:30`, 24-hour); there is no time picker.

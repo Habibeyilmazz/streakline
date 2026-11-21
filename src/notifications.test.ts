@@ -99,6 +99,13 @@ test('the timer end is scheduled only while it is still in the future', async ()
   expect(triggers()).toEqual([{ type: 'date', date: at, channelId: 'reminders' }]);
 });
 
+test('a one-off reminder is scheduled for its local day and time, and skipped once past', async () => {
+  granted = true;
+  syncNotifications([{ ...daily, date: '2099-03-05' }, { ...daily, date: '2001-03-05' }], null, true);
+  await synced();
+  expect(triggers()).toEqual([{ type: 'date', date: new Date(2099, 2, 5, 7, 30).getTime(), channelId: 'reminders' }]);
+});
+
 test('a failed sync is reported and does not block the next one', async () => {
   granted = true;
   const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});

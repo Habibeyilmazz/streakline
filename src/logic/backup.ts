@@ -86,6 +86,9 @@ function habit(v: unknown, i: number): Habit {
   if (!isObject(v)) return fail(`${what} is not an object.`);
   const name = typeof v.name === 'string' ? v.name.trim() : '';
   if (!name || name.length > MAX_NAME_LENGTH) fail(`${what} needs a name of 1 to ${MAX_NAME_LENGTH} characters.`);
+  const archivedOn = v.archivedOn != null ? day(v.archivedOn, `${what} archive date`) : undefined;
+  const resumeOn = v.resumeOn != null ? day(v.resumeOn, `${what} resume date`) : undefined;
+  if (resumeOn !== undefined && (archivedOn === undefined || resumeOn <= archivedOn)) fail(`${what} resumes without being archived before that day.`);
   return {
     id: id(v.id, `${what} id`),
     name,
@@ -94,7 +97,8 @@ function habit(v: unknown, i: number): Habit {
     createdOn: day(v.createdOn, `${what} creation date`),
     reminder: time(v.reminder, `${what} reminder`),
     // Older backups have no such field; null is accepted as "active" too.
-    ...(v.archivedOn != null && { archivedOn: day(v.archivedOn, `${what} archive date`) }),
+    ...(archivedOn !== undefined && { archivedOn }),
+    ...(resumeOn !== undefined && { resumeOn }),
     ...(v.pauses != null && { pauses: pauses(v.pauses, `${what} pause`) }),
   };
 }

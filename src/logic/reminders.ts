@@ -1,3 +1,4 @@
+import type { DayKey } from './dates';
 import type { Data } from './types';
 
 /** Strict 24-hour 'HH:MM'. */
@@ -23,6 +24,8 @@ export type PlannedReminder = {
   minute: number;
   /** 0 = Sunday ... 6 = Saturday. Absent means every day. */
   weekday?: number;
+  /** Fires once, on this local day, instead of repeating. */
+  date?: DayKey;
 };
 
 // iOS keeps at most 64 pending local notifications per app; stay under it
@@ -50,8 +53,13 @@ function allReminders(data: Data): (PlannedReminder & { habitId?: string })[] {
   if (reflection) plan.push({ title: 'Evening reflection', body: 'Two minutes: three questions about today.', ...reflection });
 
   for (const h of data.habits) {
-    const at = !h.archivedOn && h.reminder && parseTime(h.reminder);
+    const at = h.reminder && parseTime(h.reminder);
     if (!at) continue;
+    if (h.archivedOn) {
+      // The app cannot wake itself to restore a paused habit, so one notification says it is back; opening the app restores it.
+      if (h.resumeOn) plan.push({ title: h.name, body: 'Your pause is over. Time to check in.', ...at, date: h.resumeOn, habitId: h.id });
+      continue;
+    }
     const base = { title: h.name, body: 'Time to check in.', ...at, habitId: h.id };
     if (h.schedule.kind === 'weekdays' && h.schedule.days.length < 7) {
       for (const weekday of h.schedule.days) plan.push({ ...base, weekday });

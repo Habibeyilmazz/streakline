@@ -217,6 +217,25 @@ describe('archive and restore', () => {
     expect(run([{ type: 'habit/restore', id: 'read', day: '2026-12-09' }], twice).data.habits[0].pauses).toEqual(twice.data.habits[0].pauses);
   });
 
+  test('pausing until a day stores it; the habit comes back by itself on that day, with the days away excused', () => {
+    const paused = run([{ type: 'habit/archive', id: 'read', day: '2026-11-20', resumeOn: '2026-11-27' }], base);
+    expect(paused.data.habits[0]).toEqual({ ...read, archivedOn: '2026-11-20', resumeOn: '2026-11-27' });
+    expect(validateData(JSON.parse(JSON.stringify(paused.data)))).toEqual(paused.data);
+    // Not yet due: nothing changes, and the same state comes back so React re-renders nothing.
+    expect(run([{ type: 'habit/resumeDue', today: '2026-11-26' }], paused)).toBe(paused);
+    // Opened days late: restored as of the resume day, not as of today.
+    const back = run([{ type: 'habit/resumeDue', today: '2026-11-30' }], paused);
+    expect(back.data.habits[0]).toEqual({ ...read, pauses: [{ from: '2026-11-20', to: '2026-11-26' }] });
+    expect(run([{ type: 'habit/resumeDue', today: '2026-12-30' }], back)).toBe(back);
+  });
+
+  test('restoring early or archiving again drops the resume day; a resume day not after the archive day is ignored', () => {
+    const paused = run([{ type: 'habit/archive', id: 'read', day: '2026-11-20', resumeOn: '2026-11-27' }], base);
+    expect(run([{ type: 'habit/restore', id: 'read', day: '2026-11-22' }], paused).data.habits[0]).toEqual({ ...read, pauses: [{ from: '2026-11-20', to: '2026-11-21' }] });
+    expect(run([{ type: 'habit/archive', id: 'read', day: '2026-11-21' }], paused).data.habits[0]).toEqual({ ...read, archivedOn: '2026-11-21' });
+    expect(run([{ type: 'habit/archive', id: 'read', day: '2026-11-20', resumeOn: '2026-11-20' }], base).data.habits[0]).toEqual({ ...read, archivedOn: '2026-11-20' });
+  });
+
   test('a paused day can still be checked in afterwards (backfill), but not frozen', () => {
     const back = run([{ type: 'habit/restore', id: 'read', day: '2026-11-22' }], archived);
     expect(run([{ type: 'checkin/toggle', habitId: 'read', day: '2026-11-21' }], back).data.checkins.read).toEqual(['2026-11-18', '2026-11-21']);

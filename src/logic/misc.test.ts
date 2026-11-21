@@ -40,6 +40,12 @@ describe('reminderPlan', () => {
   test('an archived habit has no reminder', () => {
     expect(reminderPlan(data([h({ archivedOn: '2026-11-20' })]))).toEqual([]);
   });
+  test('a paused habit gets one reminder, on the day it comes back', () => {
+    expect(reminderPlan(data([h({ archivedOn: '2026-11-20', resumeOn: '2026-11-27', schedule: { kind: 'weekdays', days: [1, 5] } })]))).toEqual([
+      { title: 'Read', body: 'Your pause is over. Time to check in.', hour: 7, minute: 30, date: '2026-11-27' },
+    ]);
+    expect(reminderPlan(data([h({ archivedOn: '2026-11-20', resumeOn: '2026-11-27', reminder: null })]))).toEqual([]);
+  });
   test('the reflection reminder comes first and survives the cap', () => {
     const many = Array.from({ length: 20 }, (_, i) => h({ id: `h${i}`, schedule: { kind: 'weekdays', days: [1, 2, 3, 4, 5, 6] } }));
     const plan = reminderPlan(data(many, '21:00'));

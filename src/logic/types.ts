@@ -18,6 +18,8 @@ export type Habit = {
   reminder: string | null;
   /** First day the habit is no longer tracked. Absent while it is active. Its history stays. */
   archivedOn?: DayKey;
+  /** Only with archivedOn, and after it: the day the habit comes back by itself (a pause "until"). */
+  resumeOn?: DayKey;
   /** Past stretches it was archived and then restored: excused, never missed. Sorted, no overlaps, inclusive. */
   pauses?: Pause[];
 };

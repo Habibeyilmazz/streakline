@@ -5,6 +5,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Pause until (round 15, feature)
+
+Picked by using the app and from the reported gaps: a pause only ended when you remembered to restore the habit, so a week away meant a habit lost from Today, reminders and the review until you noticed. "Pause until" was the listed known limit.
+
+- Added: "Take a break" on a habit's details: Pause 3 days, Pause a week, Pause 2 weeks, and Archive (no end date) as before. A paused habit shows "Paused" with the day it comes back and a "Restore now" button; Today lists it as "Back 28 Nov" under a "Paused" (or "Paused and archived") heading.
+- Logic: a pause is an archive with `resumeOn` (`habit/archive` takes it; ignored unless after the archive day). New action `habit/resumeDue { today }` restores every habit whose `resumeOn` has come, as of `resumeOn`, so the excused days are exactly the paused ones even when the app is opened days later. The store dispatches it whenever the day or the habits change (launch, the 20 s day check, import, another tab's save). Restoring early or archiving again drops `resumeOn`.
+- Reminders: a paused habit with a reminder time gets one dated notification on its return day (`PlannedReminder.date`, Expo `DATE` trigger at local time, skipped once past). Its daily reminders come back when the app next opens, since nothing can restore it in the background.
+- Data: `validateData` accepts `resumeOn` only with `archivedOn` and after it; old data loads unchanged; `BACKUP_VERSION` stays 1.
+- Tests: 8 new (reducer pause/resume/early restore, validation, reminder plan, the dated notification), `resumeOn` and `habit/resumeDue` added to the fuzz test; an e2e stage pauses a habit for a week, lets seven days pass with the page open, and checks it is back with the pause stored and the streak kept. New screenshot `paused-detail.png`. Unit tests pass in five zones and on the small stack; tsc and expo-doctor clean.
+- Not done: a date picker for the pause end (three fixed lengths); never run on a phone, so the dated notification is checked only against a mocked `expo-notifications`. No demo GIF. The security-review skill still needs a git working directory and was not run; the new field goes through the existing validator.
+
 ### Launch pass (round 14)
 
 - Checked: tests (242 pass, 5 zone-only skipped), tsc, CI green, repo description and 11 topics, CONTRIBUTING.md and issue templates all present and accurate. The README already had the pitch, screenshots, quickstart, comparison, roadmap.

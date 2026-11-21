@@ -2,13 +2,17 @@ import { useMemo } from 'react';
 import { View } from 'react-native';
 
 import { tap } from '../haptics';
-import { addDays, dayMonthShort, eachDay, monthShort, WEEKDAYS_SHORT, weekday } from '../logic/dates';
+import { addDays, dayMonthShort, eachDay, monthShort, WEEKDAYS_SHORT, weekday, weekdayLong } from '../logic/dates';
 import { yearGrid } from '../logic/stats';
 import { FREEZES_PER_MONTH, archivedBy, dayStatus, describeSchedule, freezeBlocker, marksOf, pausedOn, streak } from '../logic/streaks';
 import type { Habit } from '../logic/types';
+import { notificationsSupported } from '../notifications';
 import { useStore } from '../store';
 import { fonts, useTheme } from '../theme';
 import { Button, CheckMark, Heatmap, LegendItem, Page, Section, Tap, Txt, cellStyle, statusWord } from '../ui';
+
+/** Days a pause lasts; the habit comes back by itself the day after. */
+const PAUSE_LENGTHS: [number, string][] = [[3, 'Pause 3 days'], [7, 'Pause a week'], [14, 'Pause 2 weeks']];
 
 export const formatMinutes = (m: number) => (m < 60 ? `${m} min` : m % 60 === 0 ? `${m / 60} h` : `${Math.floor(m / 60)} h ${m % 60} min`);
 
@@ -61,7 +65,7 @@ export function HabitDetail({ habit, onEdit }: { habit: Habit; onEdit: () => voi
       </View>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 16, columnGap: 12 }}>
-        <Stat value={unit(s.current)} label={archived ? 'Streak when archived' : 'Current streak'} />
+        <Stat value={unit(s.current)} label={archived ? `Streak when ${habit.resumeOn ? 'paused' : 'archived'}` : 'Current streak'} />
         <Stat value={unit(s.best)} label="Best streak" />
         <Stat value={String(marks.done.size)} label="Check-ins in total" />
         <Stat value={formatMinutes(focusMinutes)} label="Focus time" />
@@ -84,12 +88,21 @@ export function HabitDetail({ habit, onEdit }: { habit: Habit; onEdit: () => voi
       </Section>
 
       {archived ? (
-        <Section title="Archived">
-          <Txt variant="small" muted>
-            Since {dayMonthShort(habit.archivedOn!)} this habit is not on Today, in reminders, the focus timer or the weekly review. Its history stays. Restore it when you want to track it again: the days in between are excused, like a freeze, so its streak carries on.
-          </Txt>
-          <Button label="Restore habit" onPress={() => dispatch({ type: 'habit/restore', id: habit.id, day: today })} />
-        </Section>
+        habit.resumeOn ? (
+          <Section title="Paused">
+            <Txt variant="small" muted>
+              Paused since {dayMonthShort(habit.archivedOn!)}. It comes back by itself on {weekdayLong(habit.resumeOn)} {dayMonthShort(habit.resumeOn)}{habit.reminder && notificationsSupported ? ', with a reminder at ' + habit.reminder : ''}. Until then it is not on Today, in reminders, the focus timer or the weekly review. The days in between are excused, like a freeze, so its streak carries on.
+            </Txt>
+            <Button label="Restore now" onPress={() => dispatch({ type: 'habit/restore', id: habit.id, day: today })} />
+          </Section>
+        ) : (
+          <Section title="Archived">
+            <Txt variant="small" muted>
+              Since {dayMonthShort(habit.archivedOn!)} this habit is not on Today, in reminders, the focus timer or the weekly review. Its history stays. Restore it when you want to track it again: the days in between are excused, like a freeze, so its streak carries on.
+            </Txt>
+            <Button label="Restore habit" onPress={() => dispatch({ type: 'habit/restore', id: habit.id, day: today })} />
+          </Section>
+        )
       ) : (
         <>
           <Section title="Last 7 days">
@@ -133,10 +146,14 @@ export function HabitDetail({ habit, onEdit }: { habit: Habit; onEdit: () => voi
 
       <Button label="Edit habit" kind="outline" onPress={onEdit} />
       {!archived && (
-        <View style={{ gap: 4 }}>
+        <Section title="Take a break">
+          <Txt variant="small" muted>Away or ill for a while? Pause it: it leaves Today, reminders and the weekly review, then comes back by itself. The days in between are excused, so its streak carries on.</Txt>
+          {PAUSE_LENGTHS.map(([days, label]) => (
+            <Button key={days} kind="outline" label={label} onPress={() => dispatch({ type: 'habit/archive', id: habit.id, day: today, resumeOn: addDays(today, days) })} />
+          ))}
           <Button label="Archive habit" kind="outline" onPress={() => dispatch({ type: 'habit/archive', id: habit.id, day: today })} />
-          <Txt variant="small" muted>Stop tracking it from today and keep its history. Away or ill for a while? Archive it now and restore it when you are back: the days in between are excused and its streak carries on.</Txt>
-        </View>
+          <Txt variant="small" muted>Archiving has no end date: the habit stays out of the way until you restore it. Its history stays either way.</Txt>
+        </Section>
       )}
     </Page>
   );
