@@ -97,6 +97,45 @@ try {
   await seen(page.getByRole('img', { name: 'Last 14 days: 12 done, 0 missed, 1 frozen' }));
   await shot('today');
 
+  stage('keyboard: Space checks in, the focus ring shows, Escape closes a sheet');
+  const read = page.getByRole('checkbox', { name: 'Read 20 pages, done today' });
+  await read.focus();
+  await page.keyboard.press('Space');
+  await seen(text('3 of 4 done today'));
+  await page.keyboard.press('Space');
+  await seen(text('2 of 4 done today'));
+  await page.keyboard.press('Tab');
+  const ring = await page.evaluate(() => getComputedStyle(document.activeElement).outlineStyle + ' ' + getComputedStyle(document.activeElement).outlineColor);
+  assert.equal(ring, 'solid rgb(22, 32, 42)'); // the light theme's ink
+  await page.keyboard.press('Enter');
+  await seen(page.getByLabel('Current streak: 38 days'));
+  await page.waitForTimeout(400); // react-native-web ignores Escape until the sheet has finished sliding in
+  await page.keyboard.press('Escape');
+  await page.getByLabel('Current streak: 38 days').waitFor({ state: 'hidden', timeout: 5000 });
+  await page.waitForFunction(() => /^Read 20 pages.*Open details$/.test(document.activeElement.getAttribute('aria-label'))); // focus is back where it was
+
+  await button('Add a habit').click(); // this sheet focuses its Name field, which used to lose the way back
+  await seen(page.getByLabel('Name'));
+  await button('Close').click();
+  await page.getByLabel('Name').waitFor({ state: 'hidden', timeout: 5000 });
+  await page.waitForFunction(() => document.activeElement.textContent === 'Add a habit');
+
+  stage('reduced motion: the sheet does not slide');
+  const sliding = async () => {
+    await button(/Read 20 pages.*Open details/).click();
+    await seen(page.getByLabel('Current streak: 38 days'));
+    await page.waitForTimeout(400);
+    // The slide is a CSS animation that stays on the sheet's wrapper for as long as it is open.
+    const animated = await page.evaluate(() => [...document.querySelectorAll('*')].some((e) => getComputedStyle(e).animationName !== 'none'));
+    await button('Close').click();
+    await page.getByLabel('Current streak: 38 days').waitFor({ state: 'hidden', timeout: 5000 });
+    return animated;
+  };
+  assert.equal(await sliding(), true);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  assert.equal(await sliding(), false);
+  await page.emulateMedia({ reducedMotion: null });
+
   stage('habit detail: heatmap, backfill, freeze rules');
   await button(/Read 20 pages.*Open details/).click();
   await seen(page.getByLabel('Current streak: 38 days'));
@@ -123,6 +162,28 @@ try {
   await page.getByLabel('Name').fill('Read 20 pages');
   await button('Save changes').click();
   await button('Close').click();
+
+  stage('small phone (320 wide), longest allowed name: no control runs off the screen');
+  const LONG = 'Read twenty pages of the book club novel'; // 40 characters, the limit
+  await page.setViewportSize({ width: 320, height: 640 });
+  await button(/Read 20 pages.*Open details/).click();
+  await button('Edit habit').click();
+  await page.getByLabel('Name').fill(LONG);
+  await button('Save changes').click();
+  await button('Close').click();
+  for (const name of ['Today', 'Focus', 'Review']) {
+    await tab(name).click();
+    await seen(text(LONG));
+    const off = await page.evaluate(() => [...document.querySelectorAll('[role="button"], [role="radio"], [role="checkbox"], [role="tab"]')].filter((e) => e.getBoundingClientRect().right > innerWidth + 0.5).map((e) => e.textContent));
+    assert.deepEqual(off, [], `off screen on ${name}`);
+  }
+  await tab('Today').click();
+  await button(/Read twenty.*Open details/).click();
+  await button('Edit habit').click();
+  await page.getByLabel('Name').fill('Read 20 pages');
+  await button('Save changes').click();
+  await button('Close').click();
+  await page.setViewportSize({ width: 390, height: 844 });
 
   stage('focus timer: pause holds, finishing logs a session and checks the habit in');
   await tab('Focus').click();
@@ -216,6 +277,8 @@ try {
   await seen(text('2 of 3 done today'));
   await tab('Settings').click();
   await button('Erase all data').click();
+  const armedFill = await button('Tap again to erase everything').evaluate((e) => getComputedStyle(e).backgroundColor);
+  assert.equal(armedFill, 'rgb(255, 138, 128)'); // once armed, the button fills with the dark theme's danger colour
   await button('Tap again to erase everything').click();
   await tab('Today').click();
   await seen(text('Nothing to track yet.'));

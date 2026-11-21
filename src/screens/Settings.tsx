@@ -79,7 +79,7 @@ export function Settings({ version }: { version: string }) {
 
       <Section title="Focus timer">
         <ToggleRow label="Check in when a session ends" hint="Finishing a focus session for a habit marks it done for the day." value={s.autoCheckIn} onChange={(autoCheckIn) => set({ autoCheckIn })} />
-        <Txt variant="small" muted>Break length</Txt>
+        <Txt>Break length</Txt>
         <ChipRow label="Break length">
           {[5, 10, 15].map((m) => (
             <Chip key={m} label={`${m} min`} selected={s.breakMinutes === m} onPress={() => set({ breakMinutes: m })} />

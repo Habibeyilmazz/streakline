@@ -64,9 +64,10 @@ export function Tap({ style, children, ...rest }: Omit<PressableProps, 'style' |
   );
 }
 
-export function Button({ label, onPress, kind = 'primary', disabled, style }: { label: string; onPress: () => void; kind?: 'primary' | 'outline' | 'danger'; disabled?: boolean; style?: StyleProp<ViewStyle> }) {
+export function Button({ label, onPress, kind = 'primary', disabled, style }: { label: string; onPress: () => void; kind?: 'primary' | 'outline' | 'danger' | 'armed'; disabled?: boolean; style?: StyleProp<ViewStyle> }) {
   const t = useTheme();
-  const fg = kind === 'primary' ? t.bg : kind === 'danger' ? t.danger : t.ink;
+  const solid = kind === 'primary' ? t.ink : kind === 'armed' ? t.danger : null;
+  const edge = kind === 'danger' || kind === 'armed' ? t.danger : t.ink;
   return (
     <Tap
       onPress={onPress}
@@ -74,11 +75,11 @@ export function Button({ label, onPress, kind = 'primary', disabled, style }: { 
       aria-disabled={!!disabled}
       style={[
         { minHeight: 50, paddingHorizontal: 20, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },
-        { backgroundColor: kind === 'primary' ? t.ink : 'transparent', borderColor: kind === 'danger' ? t.danger : t.ink },
+        { backgroundColor: solid ?? 'transparent', borderColor: edge },
         style,
       ]}
     >
-      <Text style={{ fontFamily: fonts.medium, fontSize: 17, color: fg, textAlign: 'center' }}>{label}</Text>
+      <Text style={{ fontFamily: fonts.medium, fontSize: 17, color: solid ? t.bg : edge, textAlign: 'center' }}>{label}</Text>
     </Tap>
   );
 }
@@ -93,9 +94,9 @@ export function Chip({ label, selected, onPress, color, accessibilityLabel }: { 
       accessibilityRole="radio"
       aria-checked={selected}
       accessibilityLabel={accessibilityLabel ?? label}
-      style={{ minHeight: 44, minWidth: 44, paddingHorizontal: 14, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: selected ? fill : t.edge, backgroundColor: selected ? fill : 'transparent' }}
+      style={{ minHeight: 44, minWidth: 44, maxWidth: '100%', paddingHorizontal: 14, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: selected ? fill : t.edge, backgroundColor: selected ? fill : 'transparent' }}
     >
-      <Text style={{ fontSize: 15, fontWeight: '600', color: selected ? t.bg : t.ink }}>{label}</Text>
+      <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: selected ? t.bg : t.ink }}>{label}</Text>
     </Tap>
   );
 }
@@ -110,6 +111,7 @@ export function ChipRow({ label, children }: { label: string; children: ReactNod
 
 export function Field({ label, hint, error, ...rest }: TextInputProps & { label: string; hint?: string; error?: string | null }) {
   const t = useTheme();
+  const [focused, setFocused] = useState(false);
   return (
     <View style={{ gap: 6 }}>
       <Txt variant="heading">{label}</Txt>
@@ -119,8 +121,10 @@ export function Field({ label, hint, error, ...rest }: TextInputProps & { label:
         aria-invalid={!!error}
         placeholderTextColor={t.muted}
         {...rest}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         style={[
-          { minHeight: 50, borderWidth: 1.5, borderColor: error ? t.danger : t.edge, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, lineHeight: 22, color: t.ink, backgroundColor: t.surface },
+          { minHeight: 50, borderWidth: 1.5, borderColor: error ? t.danger : focused ? t.ink : t.edge, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, lineHeight: 22, color: t.ink, backgroundColor: t.surface },
           rest.multiline && { minHeight: 92, textAlignVertical: 'top' },
           rest.style,
         ]}
@@ -151,9 +155,9 @@ export function ToggleRow({ label, hint, value, onChange }: { label: string; hin
   );
 }
 
-/** A destructive button that asks for a second tap instead of opening a dialog. */
+/** A destructive button that asks for a second tap instead of opening a dialog; once armed it fills in. */
 export function ConfirmButton({ label, confirmLabel, armed, onArm, onConfirm }: { label: string; confirmLabel: string; armed: boolean; onArm: () => void; onConfirm: () => void }) {
-  return <Button kind="danger" label={armed ? confirmLabel : label} onPress={armed ? onConfirm : onArm} />;
+  return <Button kind={armed ? 'armed' : 'danger'} label={armed ? confirmLabel : label} onPress={armed ? onConfirm : onArm} />;
 }
 
 export function Section({ title, children, style }: { title?: string; children: ReactNode; style?: StyleProp<ViewStyle> }) {
@@ -199,8 +203,23 @@ export function Sheet({ visible, title, onClose, children }: { visible: boolean;
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReduceMotion();
+  // Decided when the sheet opens and kept until it opens again: on the web, a sheet whose
+  // animation type changes while it slides out never finishes closing and blocks the page.
+  const animation = useRef<'none' | 'slide'>('slide');
+  const wasVisible = useRef(false);
+  if (visible && !wasVisible.current) animation.current = reduceMotion ? 'none' : 'slide';
+  wasVisible.current = visible;
+  // Web: react-native-web hands focus back to whatever opened the sheet, but not when a field
+  // inside took focus first (autoFocus); then a keyboard user was dropped at the top of the page.
+  // Read during render because the field has focus before any effect of this component runs.
+  const opener = useRef<HTMLElement | null>(null);
+  if (Platform.OS === 'web' && visible && !opener.current) opener.current = document.activeElement as HTMLElement | null;
+  const refocus = () => {
+    opener.current?.focus();
+    opener.current = null;
+  };
   return (
-    <Modal visible={visible} animationType={reduceMotion ? 'none' : 'slide'} onRequestClose={onClose}>
+    <Modal visible={visible} animationType={animation.current} onRequestClose={onClose} onDismiss={refocus}>
       <View style={{ flex: 1, backgroundColor: t.bg, paddingTop: insets.top, paddingBottom: insets.bottom }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 20, paddingRight: 8, minHeight: 56, width: '100%', maxWidth: 560, alignSelf: 'center' }}>
           <Txt variant="heading" accessibilityRole="header" numberOfLines={1} style={{ flex: 1 }}>{title}</Txt>
@@ -277,6 +296,25 @@ export function StreakLine({ statuses, color }: { statuses: DayStatus[]; color: 
   );
 }
 
+const LINE_LEGEND: [string, DayStatus[]][] = [['Done', ['done', 'done']], ['Missed', ['missed']], ['Frozen', ['frozen', 'frozen']], ['Rest', ['rest', 'rest']]];
+
+/** What the marks on a streak line mean. For the eye only: each line already carries a spoken summary. */
+export function StreakLineLegend() {
+  const t = useTheme();
+  return (
+    <View aria-hidden style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 14, rowGap: 6 }}>
+      {LINE_LEGEND.map(([label, statuses]) => (
+        <View key={label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <View style={{ width: statuses.length * 12 }}>
+            <StreakLine statuses={statuses} color={t.ink} />
+          </View>
+          <Txt variant="small" muted>{label}</Txt>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 const CELL = 14;
 const GAP = 3;
 
@@ -287,6 +325,9 @@ export function Heatmap({ weeks, cell, label }: { weeks: DayKey[][]; cell: (day:
   // Show whole week columns only, so the left edge never cuts a cell in half.
   const [room, setRoom] = useState(0);
   const columns = Math.min(weeks.length, Math.floor((room + GAP) / (CELL + GAP)));
+  // A month label is wider than its column. At rest (scrolled to the newest weeks) the label
+  // of the column just out of view would poke in as a cut-off letter or two, so it is left out.
+  const [atEnd, setAtEnd] = useState(true);
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={label} style={{ flexDirection: 'row', gap: 6 }}>
       <View style={{ paddingTop: 20, gap: GAP }}>
@@ -302,11 +343,13 @@ export function Heatmap({ weeks, cell, label }: { weeks: DayKey[][]; cell: (day:
         style={{ width: Math.max(0, columns * (CELL + GAP) - GAP), flexGrow: 0 }}
         onLayout={() => scroll.current?.scrollToEnd({ animated: false })}
         onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}
+        scrollEventThrottle={32}
+        onScroll={({ nativeEvent: e }) => setAtEnd(e.contentOffset.x + e.layoutMeasurement.width >= e.contentSize.width - 1)}
       >
         <View style={{ flexDirection: 'row', gap: GAP }}>
-          {weeks.map((week) => {
+          {weeks.map((week, i) => {
             // Label the column in which a month starts.
-            const first = week.find((d) => d.endsWith('-01'));
+            const first = !(atEnd && i === weeks.length - columns - 1) && week.find((d) => d.endsWith('-01'));
             return (
               <View key={week[0]} style={{ gap: GAP, width: CELL }}>
                 <View style={{ height: 20 - GAP }}>

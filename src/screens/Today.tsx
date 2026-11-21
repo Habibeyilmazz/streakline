@@ -7,7 +7,7 @@ import { dayStatus, describeSchedule, marksOf, streak, todayState } from '../log
 import type { Habit } from '../logic/types';
 import { useStore } from '../store';
 import { fonts, useTheme } from '../theme';
-import { Button, CheckMark, Page, Rule, StreakLine, Tap, Txt } from '../ui';
+import { Button, CheckMark, Page, Rule, StreakLine, StreakLineLegend, Tap, Txt } from '../ui';
 
 const LINE_DAYS = 14;
 
@@ -114,6 +114,11 @@ export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: 
           )}
 
           <Button kind="outline" label="Add a habit" onPress={onAdd} />
+
+          <View style={{ gap: 8 }}>
+            <Txt variant="small" muted>Each line is the last {LINE_DAYS} days. A ring at the end means today is still open.</Txt>
+            <StreakLineLegend />
+          </View>
         </>
       )}
     </Page>
