@@ -276,3 +276,46 @@ test('describeSchedule', () => {
   expect(describeSchedule({ kind: 'weekly', times: 1 })).toBe('Once a week');
   expect(describeSchedule({ kind: 'weekly', times: 4 })).toBe('4 times a week');
 });
+
+describe('archived habits', () => {
+  // Archived on Thursday 2026-11-19: tracked up to Wednesday.
+  const archived = { ...daily, archivedOn: '2026-11-19' };
+
+  test('days from the archive date on are "none": never missed, open or freezable', () => {
+    const m = marks(['2026-11-17']);
+    expect(dayStatus(archived, '2026-11-18', TODAY, m)).toBe('missed');
+    expect(dayStatus(archived, '2026-11-19', TODAY, m)).toBe('none');
+    expect(dayStatus(archived, TODAY, TODAY, m)).toBe('none');
+    expect(todayState(archived, TODAY, m)).toBe('off');
+    expect(freezeBlocker(archived, TODAY, TODAY, m)).toBe('The habit is archived.');
+  });
+
+  test('a day checked in before archiving keeps showing as done', () => {
+    const sameDay = { ...daily, archivedOn: TODAY };
+    expect(dayStatus(sameDay, TODAY, TODAY, marks([TODAY]))).toBe('done');
+  });
+
+  test('the streak stops at the archive date instead of decaying while archived', () => {
+    const m = marks(['2026-11-16', '2026-11-17', '2026-11-18']);
+    expect(streak(archived, m, TODAY)).toEqual({ current: 3, best: 3, unit: 'day' });
+    expect(streak(archived, m, '2027-03-01')).toEqual({ current: 3, best: 3, unit: 'day' });
+    // A miss before the archive date still breaks it.
+    expect(streak(archived, marks(['2026-11-16', '2026-11-17']), TODAY).current).toBe(0);
+  });
+
+  test('restoring (no archive date) reads the archived days as missed', () => {
+    expect(streak(daily, marks(['2026-11-16', '2026-11-17', '2026-11-18']), TODAY).current).toBe(0);
+  });
+
+  test('N times a week: the week it was archived in cannot break the streak', () => {
+    const weekly = { ...habit({ kind: 'weekly', times: 3 }, '2026-11-02'), archivedOn: '2026-11-18' };
+    const m = marks(['2026-11-03', '2026-11-04', '2026-11-05', '2026-11-10', '2026-11-11', '2026-11-12', '2026-11-16']);
+    expect(streak(weekly, m, '2026-12-20')).toEqual({ current: 2, best: 2, unit: 'week' });
+  });
+
+  test('an archive date in the future (clock moved back) changes nothing yet', () => {
+    const later = { ...daily, archivedOn: '2026-12-01' };
+    expect(dayStatus(later, TODAY, TODAY, marks())).toBe('open');
+    expect(streak(later, marks([TODAY]), TODAY).current).toBe(1);
+  });
+});

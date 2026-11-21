@@ -158,3 +158,37 @@ test('the reducer never mutates its input', () => {
   ], base);
   expect(JSON.stringify(base)).toBe(frozen);
 });
+
+describe('archive and restore', () => {
+  const archived = run([{ type: 'checkin/toggle', habitId: 'read', day: '2026-11-18' }, { type: 'habit/archive', id: 'read', day: '2026-11-20' }], base);
+
+  test('archiving keeps every record and stores the date; restoring removes only the date', () => {
+    expect(archived.data.habits[0]).toEqual({ ...read, archivedOn: '2026-11-20' });
+    expect(archived.data.checkins.read).toEqual(['2026-11-18']);
+    const restored = run([{ type: 'habit/restore', id: 'read' }], archived);
+    expect(restored.data.habits[0]).toEqual(read);
+    expect(restored.data.checkins.read).toEqual(['2026-11-18']);
+    expect(() => validateData(JSON.parse(JSON.stringify(archived.data)))).not.toThrow();
+  });
+
+  test('archiving twice moves the date; unknown ids do nothing', () => {
+    expect(run([{ type: 'habit/archive', id: 'read', day: '2026-11-25' }], archived).data.habits[0].archivedOn).toBe('2026-11-25');
+    expect(run([{ type: 'habit/archive', id: 'ghost', day: '2026-11-25' }], archived)).toBe(archived);
+    expect(run([{ type: 'habit/restore', id: 'ghost' }], archived)).toBe(archived);
+  });
+
+  test('no check-in can be added on or after the archive date, but earlier days can still change', () => {
+    expect(run([{ type: 'checkin/toggle', habitId: 'read', day: '2026-11-21' }], archived)).toBe(archived);
+    expect(run([{ type: 'checkin/toggle', habitId: 'read', day: '2026-11-19' }], archived).data.checkins.read).toEqual(['2026-11-18', '2026-11-19']);
+  });
+
+  test('a focus session that ends after its habit was archived logs minutes but no check-in', () => {
+    const s = run([
+      { type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON },
+      { type: 'habit/archive', id: 'read', day: '2026-11-21' },
+      { type: 'timer/finish', sessionId: 's1' },
+    ], base);
+    expect(s.data.sessions).toHaveLength(1);
+    expect(s.data.checkins.read).toEqual([]);
+  });
+});

@@ -1,5 +1,5 @@
 import { DayKey, dayKey } from './dates';
-import { freezeBlocker, marksOf } from './streaks';
+import { archivedBy, freezeBlocker, marksOf } from './streaks';
 import { Timer, isFinished, pauseTimer, resumeTimer, startTimer } from './timer';
 import { Data, Habit, MAX_ANSWER_LENGTH, MAX_HABITS, MAX_SESSIONS, Settings } from './types';
 
@@ -9,6 +9,9 @@ export type State = { data: Data; timer: Timer | null };
 export type Action =
   | { type: 'habit/save'; habit: Habit }
   | { type: 'habit/delete'; id: string }
+  /** Hide the habit from `day` on, keeping its history. */
+  | { type: 'habit/archive'; id: string; day: DayKey }
+  | { type: 'habit/restore'; id: string }
   | { type: 'checkin/toggle'; habitId: string; day: DayKey }
   | { type: 'freeze/toggle'; habitId: string; day: DayKey; today: DayKey }
   | { type: 'reflection/save'; day: DayKey; answers: [string, string, string] }
@@ -55,9 +58,19 @@ export function reducer(state: State, action: Action): State {
       };
     }
 
+    case 'habit/archive':
+    case 'habit/restore': {
+      const habit = data.habits.find((h) => h.id === action.id);
+      if (!habit) return state;
+      const { archivedOn: _, ...active } = habit;
+      const next = action.type === 'habit/archive' ? { ...active, archivedOn: action.day } : active;
+      return withData({ habits: data.habits.map((h) => (h === habit ? next : h)) });
+    }
+
     case 'checkin/toggle': {
       const { habitId, day } = action;
-      if (!exists(habitId)) return state;
+      const habit = data.habits.find((h) => h.id === habitId);
+      if (!habit || archivedBy(habit, day)) return state;
       return withData({
         checkins: { ...data.checkins, [habitId]: toggled(data.checkins[habitId], day) },
         // A day is done or frozen, never both.
@@ -103,7 +116,8 @@ export function reducer(state: State, action: Action): State {
       // The session belongs to the day it ended on, even if the app only noticed later.
       const day = dayKey(new Date(timer.endsAt));
       const { habitId, minutes } = timer;
-      const checkIn = habitId !== null && data.settings.autoCheckIn && exists(habitId);
+      const habit = data.habits.find((h) => h.id === habitId);
+      const checkIn = habitId !== null && data.settings.autoCheckIn && !!habit && !archivedBy(habit, day);
       return {
         timer: null,
         data: {

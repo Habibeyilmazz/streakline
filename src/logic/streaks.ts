@@ -30,14 +30,17 @@ export type DayStatus =
   | 'open'
   /** Not expected that day. */
   | 'rest'
-  /** Before the habit existed, or in the future. */
+  /** Before the habit existed, after it was archived, or in the future. */
   | 'none';
+
+/** Is the habit archived as of this day? */
+export const archivedBy = (habit: Habit, day: DayKey): boolean => habit.archivedOn !== undefined && day >= habit.archivedOn;
 
 export function dayStatus(habit: Habit, day: DayKey, today: DayKey, marks: Marks): DayStatus {
   // A check-in dated after today (made before travelling west) waits until that day arrives.
   if (day > today) return 'none';
   if (marks.done.has(day)) return 'done';
-  if (day < habit.createdOn) return 'none';
+  if (day < habit.createdOn || archivedBy(habit, day)) return 'none';
   if (marks.frozen.has(day)) return 'frozen';
   if (!isDue(habit.schedule, day)) return 'rest';
   if (day === today) return 'open';
@@ -76,7 +79,8 @@ export type Streak = { current: number; best: number; unit: 'day' | 'week' };
 export function streak(habit: Habit, marks: Marks, today: DayKey): Streak {
   const done = new Set([...marks.done].map(dayNumber));
   const frozen = new Set([...marks.frozen].map(dayNumber));
-  const end = dayNumber(today);
+  // An archived habit's streak stops where it was archived.
+  const end = dayNumber(archivedBy(habit, today) ? habit.archivedOn! : today);
   // Backfilled check-ins may predate the habit's creation day.
   const start = Math.min(dayNumber(habit.createdOn), ...done);
   const s = habit.schedule;
@@ -111,6 +115,7 @@ export const FREEZES_PER_MONTH = 2;
 export function freezeBlocker(habit: Habit, day: DayKey, today: DayKey, marks: Marks): string | null {
   if (day !== today && day !== addDays(today, -1)) return 'Only today or yesterday can be frozen.';
   if (day < habit.createdOn) return 'The habit did not exist yet.';
+  if (archivedBy(habit, day)) return 'The habit is archived.';
   if (marks.done.has(day)) return 'That day is already checked in.';
   if (marks.frozen.has(day)) return 'That day is already frozen.';
   if (!isDue(habit.schedule, day)) return 'Nothing was due that day.';

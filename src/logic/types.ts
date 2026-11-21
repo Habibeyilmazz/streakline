@@ -16,6 +16,8 @@ export type Habit = {
   createdOn: DayKey;
   /** Local reminder time 'HH:MM', or null for none. */
   reminder: string | null;
+  /** First day the habit is no longer tracked. Absent while it is active. Its history stays. */
+  archivedOn?: DayKey;
 };
 
 export type FocusSession = {

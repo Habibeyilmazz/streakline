@@ -79,6 +79,8 @@ function habit(v: unknown, i: number): Habit {
     schedule: schedule(v.schedule, what),
     createdOn: day(v.createdOn, `${what} creation date`),
     reminder: time(v.reminder, `${what} reminder`),
+    // Older backups have no such field; null is accepted as "active" too.
+    ...(v.archivedOn != null && { archivedOn: day(v.archivedOn, `${what} archive date`) }),
   };
 }
 

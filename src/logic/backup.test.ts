@@ -70,6 +70,8 @@ describe('rejects malformed habits', () => {
     [{ schedule: { kind: 'weekly', times: 8 } }, 'times per week'],
     [{ reminder: '25:00' }, 'time like'],
     [{ reminder: 730 }, 'time like'],
+    [{ archivedOn: '2026-13-01' }, 'archive date'],
+    [{ archivedOn: false }, 'archive date'],
     [{ id: '' }, 'valid id'],
     [{ id: '__proto__' }, 'valid id'],
     [{ id: 'constructor' }, 'valid id'],
@@ -124,6 +126,13 @@ describe('normalises what it accepts', () => {
   test('trims names and drops unknown fields', () => {
     const d = validateData({ habits: [{ ...sample.habits[0], name: '  Read  ', evil: '<script>' }] });
     expect(d.habits[0]).toEqual({ ...sample.habits[0], name: 'Read' });
+  });
+
+  test('an archive date survives a round trip; null or missing means active', () => {
+    const archived = { ...sample, habits: [{ ...sample.habits[0], archivedOn: '2026-11-20' }] };
+    expect(parseBackup(exportBackup(archived, new Date()))).toEqual({ ok: true, data: validateData(archived) });
+    expect(validateData(archived).habits[0].archivedOn).toBe('2026-11-20');
+    expect(validateData({ habits: [{ ...sample.habits[0], archivedOn: null }] }).habits[0]).toEqual(sample.habits[0]);
   });
 
   test('does not pollute Object.prototype', () => {

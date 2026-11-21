@@ -37,6 +37,9 @@ describe('reminderPlan', () => {
   test('N times a week reminds every day', () => {
     expect(reminderPlan(data([h({ schedule: { kind: 'weekly', times: 3 } })]))).toHaveLength(1);
   });
+  test('an archived habit has no reminder', () => {
+    expect(reminderPlan(data([h({ archivedOn: '2026-11-20' })]))).toEqual([]);
+  });
   test('the reflection reminder comes first and survives the cap', () => {
     const many = Array.from({ length: 20 }, (_, i) => h({ id: `h${i}`, schedule: { kind: 'weekdays', days: [1, 2, 3, 4, 5, 6] } }));
     const plan = reminderPlan(data(many, '21:00'));

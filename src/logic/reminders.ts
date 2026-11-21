@@ -40,7 +40,7 @@ export function reminderPlan(data: Data): PlannedReminder[] {
   if (reflection) plan.push({ title: 'Evening reflection', body: 'Two minutes: three questions about today.', ...reflection });
 
   for (const h of data.habits) {
-    const at = h.reminder && parseTime(h.reminder);
+    const at = !h.archivedOn && h.reminder && parseTime(h.reminder);
     if (!at) continue;
     const base = { title: h.name, body: 'Time to check in.', ...at };
     if (h.schedule.kind === 'weekdays' && h.schedule.days.length < 7) {

@@ -126,3 +126,30 @@ test('weekCount counts check-ins from Monday to Sunday', () => {
   expect(weekCount(days, '2026-11-18')).toBe(2);
   expect(weekCount(undefined, '2026-11-18')).toBe(0);
 });
+
+describe('archived habits in the review', () => {
+  test('weeks after the archive date leave the habit out; the week it was archived counts only the days before', () => {
+    const read = { ...habit('read', { kind: 'daily' }), archivedOn: '2026-11-19' }; // Thursday
+    const d = data([read], { read: ['2026-11-16', '2026-11-17'] });
+    const r = weekReview(d, MON, '2026-11-25');
+    expect(r.habits[0].days).toEqual(['done', 'done', 'missed', 'none', 'none', 'none', 'none']);
+    expect(r).toMatchObject({ done: 2, due: 3, missed: 1 });
+    expect(weekReview(d, '2026-11-23', '2026-11-25').habits).toEqual([]);
+    // History before archiving is untouched.
+    expect(weekReview(d, '2026-11-09', '2026-11-25').habits[0]).toMatchObject({ due: 7, missed: 7 });
+  });
+
+  test('N times a week: the archive week asks only for the days that were left', () => {
+    const run = { ...habit('run', { kind: 'weekly', times: 3 }), archivedOn: '2026-11-18' }; // Wednesday: two days left
+    const r = weekReview(data([run], { run: ['2026-11-16'] }), MON, '2026-11-25');
+    expect(r).toMatchObject({ done: 1, due: 2, missed: 1 });
+  });
+
+  test('the all-habits heatmap does not count an archived habit after its archive date', () => {
+    const read = { ...habit('read', { kind: 'daily' }), archivedOn: '2026-11-19' };
+    const gym = habit('gym', { kind: 'daily' });
+    const levels = dayLevels(data([read, gym], { gym: ['2026-11-20'] }), ['2026-11-18', '2026-11-20'], '2026-11-21');
+    expect(levels.get('2026-11-18')).toBe(0);
+    expect(levels.get('2026-11-20')).toBe(4); // read no longer due
+  });
+});

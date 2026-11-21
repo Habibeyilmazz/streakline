@@ -1,5 +1,5 @@
 import { DayKey, addDays, eachDay, weekStart } from './dates';
-import { DayStatus, dayStatus, marksOf } from './streaks';
+import { DayStatus, archivedBy, dayStatus, marksOf } from './streaks';
 import type { Data, Habit } from './types';
 
 export type HabitWeek = {
@@ -51,12 +51,12 @@ export function weekReview(data: Data, start: DayKey, today: DayKey): WeekReview
     const statuses = days.map((d) => dayStatus(habit, d, today, marks));
     const count = (s: DayStatus) => statuses.filter((x) => x === s).length;
     const checked = count('done');
-    if (habit.createdOn > end && checked === 0) continue; // not part of this week
+    if ((habit.createdOn > end || archivedBy(habit, start)) && checked === 0) continue; // not part of this week
 
     let done: number, due: number, missed: number, frozen: number;
     if (habit.schedule.kind === 'weekly') {
-      // The first week of a habit may be too short to fit all N.
-      const available = days.filter((d) => d >= habit.createdOn).length;
+      // The first week of a habit, or the week it was archived, may be too short to fit all N.
+      const available = days.filter((d) => d >= habit.createdOn && !archivedBy(habit, d)).length;
       const target = Math.min(habit.schedule.times, Math.max(available, checked));
       done = Math.min(checked, target);
       frozen = Math.min(count('frozen'), target - done);
