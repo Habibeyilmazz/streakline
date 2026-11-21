@@ -30,7 +30,9 @@ export type DayStatus =
   | 'open'
   /** Not expected that day. */
   | 'rest'
-  /** Before the habit existed, while it was archived (or paused), or in the future. */
+  /** Archived and later restored: excused, drawn as a dashed gap on the streak line. */
+  | 'paused'
+  /** Before the habit existed, while it is archived, or in the future. */
   | 'none';
 
 /** Is the habit archived as of this day? */
@@ -54,7 +56,8 @@ export function dayStatus(habit: Habit, day: DayKey, today: DayKey, marks: Marks
   // A check-in dated after today (made before travelling west) waits until that day arrives.
   if (day > today) return 'none';
   if (marks.done.has(day)) return 'done';
-  if (day < habit.createdOn || archivedBy(habit, day) || pausedOn(habit, day)) return 'none';
+  if (day < habit.createdOn || archivedBy(habit, day)) return 'none';
+  if (pausedOn(habit, day)) return 'paused';
   if (marks.frozen.has(day)) return 'frozen';
   if (!isDue(habit.schedule, day)) return 'rest';
   if (day === today) return 'open';

@@ -5,6 +5,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Reliability pass (round 13)
+
+- Fixed: the Today streak line drew paused days (archived, then restored) as a blank gap. `dayStatus` now returns `'paused'` for them (it used to return `'none'`); the line draws a dotted mark, the legend has a "Paused" entry and the spoken summary counts them. Existing tests that expected `'none'` for paused days were updated; the heatmaps and review treat `'paused'` as before (left out of counts).
+- Fixed: `e2e/serve.mjs` crashed on a malformed `%` escape in the URL; it now answers 400. Checked by the e2e run.
+- Probed, no bug: a backup holding every day from 1970 to 2199 for three habits (streak, freeze check, week review, year heatmap) computes in about 130 ms. Unit suite passes in the five time zones and on a 200 KB stack; e2e passes.
+- Still true: never run on a phone or Hermes; security-review skill not run (needs a git working directory); no "pause until" date.
+
 ### Pause a habit (round 12, feature)
 
 Picked by using the app as a newcomer: a week away or ill cost every streak. A freeze covers one day (two a month); archiving hid the habit but restoring it read every archived day as missed. "Pause" was the gap a habit tracker user hits first, and the README listed it as a known limit.

@@ -73,7 +73,7 @@ export function HabitDetail({ habit, onEdit }: { habit: Habit; onEdit: () => voi
           label={`Past year of ${habit.name}: ${weeks.flat().filter((d) => marks.done.has(d)).length} days done`}
           cell={(day) => {
             const status = dayStatus(habit, day, today, marks);
-            return status === 'none' || status === 'open' ? { backgroundColor: day > today ? 'transparent' : t.faint } : cellStyle(t, status, color);
+            return status === 'none' || status === 'paused' || status === 'open' ? { backgroundColor: day > today ? 'transparent' : t.faint } : cellStyle(t, status, color);
           }}
         />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>

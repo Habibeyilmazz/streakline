@@ -20,6 +20,8 @@ if (!existsSync('dist/index.html')) {
   process.exit(1);
 }
 const server = await serve('dist', PORT);
+// A malformed %-escape in a URL must not take the server down.
+assert.equal((await fetch(`http://127.0.0.1:${PORT}/%zz`)).status, 400);
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, timezoneId: 'UTC', locale: 'en-GB' });
 const page = await context.newPage();

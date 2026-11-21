@@ -8,7 +8,8 @@ const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'applic
 export function serve(dir, port) {
   const root = resolve(dir);
   const server = createServer((req, res) => {
-    const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname));
+    let path;
+    try { path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)); } catch { return res.writeHead(400).end(); } // bad %-escape
     let file = join(root, path);
     if (!file.startsWith(root)) return res.writeHead(403).end();
     if (!existsSync(file) || statSync(file).isDirectory()) file = join(root, 'index.html');

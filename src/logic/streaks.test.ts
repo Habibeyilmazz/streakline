@@ -326,8 +326,8 @@ describe('paused habits (archived, then restored)', () => {
 
   test('paused days are "none": not missed, not freezable, but a backfilled check-in shows as done', () => {
     expect(dayStatus(paused, '2026-11-11', TODAY, marks())).toBe('missed');
-    expect(dayStatus(paused, '2026-11-12', TODAY, marks())).toBe('none');
-    expect(dayStatus(paused, '2026-11-17', TODAY, marks())).toBe('none');
+    expect(dayStatus(paused, '2026-11-12', TODAY, marks())).toBe('paused');
+    expect(dayStatus(paused, '2026-11-17', TODAY, marks())).toBe('paused');
     expect(dayStatus(paused, '2026-11-18', TODAY, marks())).toBe('missed');
     expect(dayStatus(paused, '2026-11-13', TODAY, marks(['2026-11-13']))).toBe('done');
     expect(freezeBlocker(paused, '2026-11-17', '2026-11-18', marks())).toBe('The habit was paused that day.');

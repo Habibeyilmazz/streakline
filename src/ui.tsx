@@ -256,12 +256,13 @@ export function cellStyle(t: Theme, status: DayStatus, color: string): ViewStyle
       return { borderWidth: 1.5, borderColor: color, borderStyle: 'dashed' };
     case 'rest':
       return { backgroundColor: t.faint };
+    case 'paused':
     case 'none':
       return {};
   }
 }
 
-const STATUS_WORD: Record<DayStatus, string> = { done: 'done', frozen: 'frozen', missed: 'missed', open: 'still open', rest: 'rest day', none: 'not tracked' };
+const STATUS_WORD: Record<DayStatus, string> = { done: 'done', frozen: 'frozen', missed: 'missed', open: 'still open', rest: 'rest day', paused: 'paused', none: 'not tracked' };
 export const statusWord = (s: DayStatus) => STATUS_WORD[s];
 
 /**
@@ -276,7 +277,7 @@ export function StreakLine({ statuses, color }: { statuses: DayStatus[]; color: 
     <View
       accessible
       accessibilityRole="image"
-      accessibilityLabel={`Last ${statuses.length} days: ${count('done')} done, ${count('missed')} missed, ${count('frozen')} frozen`}
+      accessibilityLabel={`Last ${statuses.length} days: ${count('done')} done, ${count('missed')} missed, ${count('frozen')} frozen${count('paused') ? `, ${count('paused')} paused` : ''}`}
       style={{ flexDirection: 'row', height: 10, alignItems: 'center' }}
     >
       {statuses.map((s, i) => {
@@ -289,6 +290,7 @@ export function StreakLine({ statuses, color }: { statuses: DayStatus[]; color: 
             {s === 'frozen' && <View style={[{ alignSelf: 'stretch', height: 8, backgroundColor: t.frost, borderTopWidth: 1.5, borderBottomWidth: 1.5, borderColor: t.frostEdge, marginLeft: left ? 1 : 0, marginRight: right ? 1 : 0 }, round]} />}
             {s === 'missed' && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: t.muted }} />}
             {s === 'open' && <View style={{ width: 8, height: 8, borderRadius: 4, borderWidth: 1.5, borderColor: color }} />}
+            {s === 'paused' && <View style={{ alignSelf: 'stretch', height: 0, borderTopWidth: 2, borderStyle: 'dotted', borderColor: t.muted }} />}
             {s === 'rest' && <View style={{ alignSelf: 'stretch', height: 2, backgroundColor: t.line }} />}
           </View>
         );
@@ -297,7 +299,7 @@ export function StreakLine({ statuses, color }: { statuses: DayStatus[]; color: 
   );
 }
 
-const LINE_LEGEND: [string, DayStatus[]][] = [['Done', ['done', 'done']], ['Missed', ['missed']], ['Frozen', ['frozen', 'frozen']], ['Rest', ['rest', 'rest']]];
+const LINE_LEGEND: [string, DayStatus[]][] = [['Done', ['done', 'done']], ['Missed', ['missed']], ['Frozen', ['frozen', 'frozen']], ['Rest', ['rest', 'rest']], ['Paused', ['paused', 'paused']]];
 
 /** What the marks on a streak line mean. For the eye only: each line already carries a spoken summary. */
 export function StreakLineLegend() {
