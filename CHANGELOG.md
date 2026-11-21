@@ -5,6 +5,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security pass (round 3)
+
+The app has no network, accounts or backend, so its trust boundaries are an imported backup file and its own device storage. Reviewed by hand (the security-review skill could not run in this session); each fix has a regression test.
+
+- Fixed: a stored focus timer with fractional minutes or an out-of-range end time (1970 or 2200 and later) passed `validateTimer`. Finishing it wrote a session `validateData` refuses, so on the next launch all data went to the recovery screen. `validateTimer` now applies the same rules.
+- Fixed: the 20 MB import limit was only checked when the file picker reported a size. `parseBackup` now refuses longer text itself (`MAX_BACKUP_CHARS`).
+- CI: actions pinned to commit SHAs, `persist-credentials: false` on checkout, `expo-doctor` pinned to 1.21.8 instead of the latest version fetched by `npx`. `permissions: contents: read` was already set.
+- Dependencies: `npm audit` reported 20 moderate advisories, all in build and test tools (minimatch through `@expo/fingerprint`, glob through jest). npm `overrides` move them to minimatch 11.0.9 and glob 14.0.6, and `npm audit` now reports 0. Tests, coverage, expo-doctor, the web and native exports and e2e all pass on the new versions. Drop the overrides once expo and jest ship fixed versions.
+- Checked with no change needed: git history has no secrets and only the noreply identity. The import validator refuses `__proto__` and other prototype keys (there is an existing test) and checks every field. The source has no `dangerouslySetInnerHTML`, `eval` or network calls. Notifications show habit names only, never reflection text.
+- Left alone: the test-only static server `e2e/serve.mjs` (bound to 127.0.0.1) stops with an error on a malformed `%` escape in a URL. Android `allowBackup` keeps the Expo default (on), so the data can go into the user's own device backup.
+
 ### Design pass (round 2)
 
 Looked at every screen in the web build at 390 px and 1280 px, light and dark, empty and filled, plus the keyboard focus ring in dark mode. Most of it already held up; only these changed:
