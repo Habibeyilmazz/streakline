@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { exportBackup, parseBackup } from '../logic/backup';
-import { parseTime } from '../logic/reminders';
+import { normalizeTime } from '../logic/reminders';
 import { Data, EMPTY_DATA, Settings as SettingsType } from '../logic/types';
 import { pickTextFile, saveTextFile } from '../files';
 import { notificationsAllowed, notificationsSupported, onNotificationsSynced } from '../notifications';
@@ -28,7 +28,7 @@ export function Settings({ version }: { version: string }) {
   const set = (patch: Partial<SettingsType>) => dispatch({ type: 'settings/set', patch });
 
   const [reminder, setReminder] = useState(s.reflectionReminder ?? '');
-  const reminderError = reminder && !parseTime(reminder) ? 'Use 24-hour time, like 21:00.' : null;
+  const reminderError = reminder.trim() && !normalizeTime(reminder) ? 'Use 24-hour time, like 21:00.' : null;
   const [allowed, setAllowed] = useState(true);
   useEffect(() => {
     const check = () => void notificationsAllowed().then(setAllowed, () => {});
@@ -95,7 +95,8 @@ export function Settings({ version }: { version: string }) {
             value={reminder}
             onChangeText={(text) => {
               setReminder(text);
-              if (text === '' || parseTime(text)) set({ reflectionReminder: text || null });
+              const time = normalizeTime(text);
+              if (time || !text.trim()) set({ reflectionReminder: time });
             }}
             placeholder="21:00"
             maxLength={5}

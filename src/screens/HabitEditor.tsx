@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { WEEKDAYS_SHORT } from '../logic/dates';
-import { parseTime } from '../logic/reminders';
+import { normalizeTime } from '../logic/reminders';
 import { HABIT_COLOR_COUNT, Habit, MAX_HABITS, MAX_NAME_LENGTH, Schedule } from '../logic/types';
 import { notificationsSupported } from '../notifications';
 import { newId, useStore } from '../store';
@@ -38,7 +38,7 @@ export function HabitEditor({ habit, onDone }: { habit?: Habit; onDone: (deleted
         ? `You have reached the limit of ${MAX_HABITS} habits.`
         : null;
   const daysError = kind === 'weekdays' && days.length === 0 ? 'Pick at least one day.' : null;
-  const reminderError = reminder && !parseTime(reminder) ? 'Use 24-hour time, like 07:30 or 21:00.' : null;
+  const reminderError = reminder.trim() && !normalizeTime(reminder) ? 'Use 24-hour time, like 7:30 or 21:00.' : null;
 
   const save = () => {
     setTried(true);
@@ -46,7 +46,7 @@ export function HabitEditor({ habit, onDone }: { habit?: Habit; onDone: (deleted
     const schedule: Schedule = kind === 'daily' ? { kind } : kind === 'weekly' ? { kind, times } : { kind, days: [...days].sort() };
     dispatch({
       type: 'habit/save',
-      habit: { id: habit?.id ?? newId(), name: trimmed, color, schedule, createdOn: habit?.createdOn ?? today, reminder: reminder || null },
+      habit: { id: habit?.id ?? newId(), name: trimmed, color, schedule, createdOn: habit?.createdOn ?? today, reminder: normalizeTime(reminder) },
     });
     onDone();
   };

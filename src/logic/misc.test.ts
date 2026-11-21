@@ -1,10 +1,21 @@
-import { MAX_REMINDERS, parseTime, reminderPlan } from './reminders';
+import { MAX_REMINDERS, normalizeTime, parseTime, reminderPlan } from './reminders';
 import { formatClock, isFinished, pauseTimer, remainingMs, resumeTimer, startTimer, validateTimer } from './timer';
 import { DEFAULT_SETTINGS, Data, Habit } from './types';
 
 describe('parseTime', () => {
   test.each([['00:00', 0, 0], ['07:05', 7, 5], ['23:59', 23, 59]])('%s', (s, hour, minute) => expect(parseTime(s)).toEqual({ hour, minute }));
   test.each(['24:00', '7:05', '07:60', '0705', '07:05:00', ' 07:05', ''])('rejects %p', (s) => expect(parseTime(s)).toBeNull());
+});
+
+describe('normalizeTime', () => {
+  test.each([['07:30', '07:30'], ['7:30', '07:30'], ['7.30', '07:30'], ['21.00', '21:00'], [' 0:05 ', '00:05'], ['23:59', '23:59']])('%p -> %s', (typed, stored) =>
+    expect(normalizeTime(typed)).toBe(stored));
+  test.each(['', '7', '730', '24:00', '7:60', '7:5', '7:300', '9pm', '07:30:00', '-7:30'])('rejects %p', (typed) => expect(normalizeTime(typed)).toBeNull());
+  test('no prefix of a time is itself a time, so a field can save as you type', () => {
+    for (const typed of ['7:30', '21:00', '21.00']) {
+      for (let n = 1; n < typed.length; n++) expect(normalizeTime(typed.slice(0, n))).toBeNull();
+    }
+  });
 });
 
 describe('reminderPlan', () => {

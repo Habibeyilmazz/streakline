@@ -6,6 +6,16 @@ export function parseTime(s: string): { hour: number; minute: number } | null {
   return m ? { hour: +m[1], minute: +m[2] } : null;
 }
 
+/**
+ * What a person types for a time, as strict 'HH:MM': the leading zero may be
+ * missing and the separator may be a dot ('7:30', '7.30'). Null if it is not a time.
+ */
+export function normalizeTime(input: string): string | null {
+  const m = /^(\d{1,2})[:.](\d{2})$/.exec(input.trim());
+  const time = m && `${m[1].padStart(2, '0')}:${m[2]}`;
+  return time && parseTime(time) ? time : null;
+}
+
 export type PlannedReminder = {
   title: string;
   body: string;
