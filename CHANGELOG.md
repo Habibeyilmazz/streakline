@@ -5,6 +5,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Pause a habit (round 12, feature)
+
+Picked by using the app as a newcomer: a week away or ill cost every streak. A freeze covers one day (two a month); archiving hid the habit but restoring it read every archived day as missed. "Pause" was the gap a habit tracker user hits first, and the README listed it as a known limit.
+
+- Added: restoring an archived habit excuses the days it was archived. They are stored on the habit as `pauses` (`{ from, to }`, inclusive). Paused days bridge a streak like frozen days without counting; an "N times a week" week asks only for its unpaused days and a fully paused week is skipped; the weekly review and both heatmaps leave them out. A paused day can still be backfilled (the check-in counts) but not frozen. The last-7-days row labels such days "paused".
+- UI: the Archive button's hint and the archived habit's text now say this ("Away or ill for a while? Archive it now and restore it when you are back"). `archived-detail.png` retaken.
+- Data: `validateData` accepts `pauses` (sorted, overlapping or touching ones joined, at most 1000 per habit, `from <= to`); the reducer merges the same way, so it never saves what the validator refuses. Old data loads unchanged; `BACKUP_VERSION` stays 1. `habit/restore` now takes the restore `day`. The editor keeps `pauses` (it spreads the habit) when you save changes.
+- Tests: 13 new unit tests (streak bridging for daily, weekdays and weekly; review; validation; reducer merge; backfill and freeze on paused days), restore added with a day to the fuzz test, an e2e stage on its own clock (archive, three days pass, restore, the streak is still 2 days and the pause is stored).
+- Reported gaps checked: the e2e `serve.mjs` bad-`%` crash is test-only on 127.0.0.1 and left alone; the security-review skill still needs a git working directory and was not run (this change only adds a validated field). Still never run on a phone or Hermes.
+- Not done on purpose: a "pause until" date that restores by itself (needs a scheduled resume); the Today 14-day streak line still draws paused days as a gap.
+
 ### Security pass (round 11)
 
 Reviewed by hand again: the security-review skill could not run (it needs the session's working directory to be a git repository, and this agent's is not). Trust boundaries are unchanged since round 3: an imported backup file, the app's own storage, and on the web another tab's storage event, all through `validateData` / `validateTimer`.
