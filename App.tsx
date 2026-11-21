@@ -2,7 +2,7 @@ import { BricolageGrotesque_500Medium } from '@expo-google-fonts/bricolage-grote
 import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesque/700Bold';
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Text, View, useColorScheme } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,7 +16,7 @@ import { Settings } from './src/screens/Settings';
 import { Today } from './src/screens/Today';
 import { saveTextFile } from './src/files';
 import { Loaded, StoreProvider, loadState, useStore } from './src/store';
-import { ThemeContext, dark, light } from './src/theme';
+import { Theme, ThemeContext, dark, light } from './src/theme';
 import { Button, ConfirmButton, Sheet, Tap, Txt } from './src/ui';
 
 const TABS = ['Today', 'Focus', 'Reflect', 'Review', 'Settings'] as const;
@@ -91,6 +91,20 @@ function Shell() {
   );
 }
 
+/** A full-screen stop before the app proper: the stored data could not be used. */
+function Stop({ theme, title, children }: { theme: Theme; title: string; children: ReactNode }) {
+  return (
+    <ThemeContext.Provider value={theme}>
+      <View style={{ flex: 1, justifyContent: 'center', backgroundColor: theme.bg }}>
+        <View accessibilityRole="alert" style={{ padding: 24, gap: 16, width: '100%', maxWidth: 560, alignSelf: 'center' }}>
+          <Txt variant="title" accessibilityRole="header">{title}</Txt>
+          {children}
+        </View>
+      </View>
+    </ThemeContext.Provider>
+  );
+}
+
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({ BricolageGrotesque_500Medium, BricolageGrotesque_700Bold });
   const [loaded, setLoaded] = useState<Loaded | null>(null);
@@ -108,26 +122,20 @@ export default function App() {
   if (loadFailed) {
     // Starting empty here would overwrite whatever is stored, so stop instead.
     body = (
-      <ThemeContext.Provider value={early}>
-        <View style={{ flex: 1, justifyContent: 'center', padding: 24, gap: 16, backgroundColor: early.bg }}>
-          <Txt variant="title">Your data could not be read from this device.</Txt>
-          <Txt muted>Nothing has been changed. Try again, or restart the app.</Txt>
-          <Button label="Try again" onPress={load} />
-        </View>
-      </ThemeContext.Provider>
+      <Stop theme={early} title="Your data could not be read from this device.">
+        <Txt muted>Nothing has been changed. Try again, or restart the app.</Txt>
+        <Button label="Try again" onPress={load} />
+      </Stop>
     );
   } else if (loaded?.unreadable) {
     // The stored data failed validation. Continuing would replace it, so ask first.
     const raw = loaded.unreadable;
     body = (
-      <ThemeContext.Provider value={early}>
-        <View style={{ flex: 1, justifyContent: 'center', padding: 24, gap: 16, backgroundColor: early.bg }}>
-          <Txt variant="title">Your saved data is damaged and could not be opened.</Txt>
-          <Txt muted>Nothing has been deleted yet. Save a copy first; it is a JSON file that can often be repaired by hand and imported again.</Txt>
-          <Button label="Save a copy of the data" onPress={() => saveTextFile('streakline-damaged-data.json', raw).catch(() => {})} />
-          <ConfirmButton label="Start empty" confirmLabel="Tap again to start empty" armed={armed} onArm={() => setArmed(true)} onConfirm={() => setLoaded({ ...loaded, unreadable: null })} />
-        </View>
-      </ThemeContext.Provider>
+      <Stop theme={early} title="Your saved data is damaged and could not be opened.">
+        <Txt muted>Nothing has been deleted yet. Save a copy first; it is a JSON file that can often be repaired by hand and imported again.</Txt>
+        <Button label="Save a copy of the data" onPress={() => saveTextFile('streakline-damaged-data.json', raw).catch(() => {})} />
+        <ConfirmButton label="Start empty" confirmLabel="Tap again to start empty" armed={armed} onArm={() => setArmed(true)} onConfirm={() => setLoaded({ ...loaded, unreadable: null })} />
+      </Stop>
     );
   } else if (!loaded || (!fontsLoaded && !fontError)) {
     body = (
