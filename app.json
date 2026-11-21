@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "streakline",
+    "name": "Streakline",
     "slug": "streakline",
-    "version": "1.0.0",
+    "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
     },
@@ -19,7 +19,13 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Streakline",
+      "shortName": "Streakline",
+      "lang": "en",
+      "description": "Offline-first habit tracker and focus timer",
+      "backgroundColor": "#F3F5F2",
+      "themeColor": "#16202A"
     },
     "plugins": [
       "expo-sharing",
