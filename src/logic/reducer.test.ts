@@ -69,6 +69,21 @@ test('deleting a habit removes its records but keeps its focus minutes', () => {
   expect(s.timer?.habitId).toBeNull();
 });
 
+test('moving a habit swaps it with its active neighbour, skipping archived habits', () => {
+  const s = run(['a', 'b', 'c', 'd'].map((id): Action => ({ type: 'habit/save', habit: { ...read, id } })));
+  const order = (st: State) => st.data.habits.map((h) => h.id).join('');
+  expect(order(run([{ type: 'habit/move', id: 'c', by: -1 }], s))).toBe('acbd');
+  expect(order(run([{ type: 'habit/move', id: 'a', by: 1 }], s))).toBe('bacd');
+  // At either end, or for an unknown habit, nothing changes.
+  expect(run([{ type: 'habit/move', id: 'a', by: -1 }], s)).toBe(s);
+  expect(run([{ type: 'habit/move', id: 'd', by: 1 }], s)).toBe(s);
+  expect(run([{ type: 'habit/move', id: 'ghost', by: 1 }], s)).toBe(s);
+  // An archived habit keeps its place and is jumped over; it cannot be moved itself.
+  const withArchived = run([{ type: 'habit/archive', id: 'b', day: '2026-11-21' }], s);
+  expect(order(run([{ type: 'habit/move', id: 'a', by: 1 }], withArchived))).toBe('cbad');
+  expect(run([{ type: 'habit/move', id: 'b', by: 1 }], withArchived)).toBe(withArchived);
+});
+
 describe('focus timer', () => {
   test('finishing a focus session logs it and checks the habit in', () => {
     const s = run([{ type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON }, { type: 'timer/finish', sessionId: 's1' }], base);

@@ -12,9 +12,9 @@ const TODAY = '2026-03-29';
 function randomAction(r: () => number, step: number): Action {
   const pick = <T,>(xs: T[]) => xs[Math.floor(r() * xs.length)];
   const id = pick(['a', 'b', 'c']);
-  const day = addDays(TODAY, -Math.floor(r() * 12) + 1); // includes a day after today
+  const day = addDays(TODAY, -Math.floor(r() * 13) + 1); // includes a day after today
   const schedules: Schedule[] = [{ kind: 'daily' }, { kind: 'weekdays', days: [1, 3, 5] }, { kind: 'weekly', times: 3 }];
-  switch (Math.floor(r() * 12)) {
+  switch (Math.floor(r() * 13)) {
     case 0: {
       const h: Habit = { id, name: 'H' + id, color: 0, schedule: pick(schedules), createdOn: day, reminder: null };
       return { type: 'habit/save', habit: h };
@@ -28,6 +28,7 @@ function randomAction(r: () => number, step: number): Action {
     case 8: return { type: 'timer/start', kind: 'focus', habitId: pick([id, null]), now: Date.UTC(2026, 2, 29, 10) + step };
     case 9: return { type: 'timer/finish', sessionId: 's' + step };
     case 10: return { type: 'timer/pause', now: Date.UTC(2026, 2, 29, 10) + step };
+    case 11: return { type: 'habit/move', id, by: pick([-1, 1] as const) };
     default: return { type: 'timer/resume', now: Date.UTC(2026, 2, 29, 10) + step };
   }
 }

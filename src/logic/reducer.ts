@@ -12,6 +12,8 @@ export type Action =
   /** Hide the habit from `day` on, keeping its history. */
   | { type: 'habit/archive'; id: string; day: DayKey }
   | { type: 'habit/restore'; id: string }
+  /** Swap the habit with the next active (not archived) habit above (-1) or below (1) it. */
+  | { type: 'habit/move'; id: string; by: -1 | 1 }
   | { type: 'checkin/toggle'; habitId: string; day: DayKey }
   | { type: 'freeze/toggle'; habitId: string; day: DayKey; today: DayKey }
   | { type: 'reflection/save'; day: DayKey; answers: [string, string, string] }
@@ -65,6 +67,16 @@ export function reducer(state: State, action: Action): State {
       const { archivedOn: _, ...active } = habit;
       const next = action.type === 'habit/archive' ? { ...active, archivedOn: action.day } : active;
       return withData({ habits: data.habits.map((h) => (h === habit ? next : h)) });
+    }
+
+    case 'habit/move': {
+      const active = data.habits.flatMap((h, i) => (h.archivedOn === undefined ? [i] : []));
+      const at = active.findIndex((i) => data.habits[i].id === action.id);
+      const other = active[at + action.by];
+      if (at < 0 || other === undefined) return state;
+      const habits = [...data.habits];
+      [habits[active[at]], habits[other]] = [habits[other], habits[active[at]]];
+      return withData({ habits });
     }
 
     case 'checkin/toggle': {
