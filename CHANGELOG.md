@@ -5,6 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Performance and accessibility re-check (round 16)
+
+Re-measured after the pause feature (web build, headless Chromium 390x844). Nothing worth changing, so no app code changed.
+
+- Performance: bundle 550 KB (162 KB gzip), same as round 8. 40 habits, 5 years, 3,652 sessions (0.9 MB JSON): interactive 131 ms (64 ms empty), Review 124 ms, Focus 48 ms, Settings 47 ms, Today 78 ms, one check-in 82 ms, habit details 95 ms.
+- Accessibility: axe-core 4.10.2 on all five tabs, the habit sheet and the paused habit sheet, light and dark: 0 violations. Added `e2e/axe.mjs` (`node e2e/axe.mjs <path to axe.min.js>`; axe-core is not a dependency, install it elsewhere) so the check is repeatable.
+- Unused code: `depcheck` clean; `ts-prune` only the known false positive (`notificationsSupported`).
+- Reported gaps: no pause date picker (a feature, three fixed lengths stay); never run on a phone; no demo GIF; security-review skill not run (needs a git working directory this agent lacks).
+
 ### Pause until (round 15, feature)
 
 Picked by using the app and from the reported gaps: a pause only ended when you remembered to restore the habit, so a week away meant a habit lost from Today, reminders and the review until you noticed. "Pause until" was the listed known limit.
