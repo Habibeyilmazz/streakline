@@ -30,6 +30,8 @@ jobs:
         run: npm run typecheck
       - name: Unit tests in five time zones
         run: npm run test:zones
+      - name: Unit tests on a small JS stack (a phone has less than Node)
+        run: npm run test:small-stack
       - name: Expo doctor
         run: npx --yes expo-doctor@1.21.8
       - name: Build web

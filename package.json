@@ -34,6 +34,7 @@
     "web": "expo start --web --port 4120",
     "typecheck": "tsc --noEmit",
     "test": "jest",
+    "test:small-stack": "node --stack-size=200 node_modules/jest/bin/jest.js --silent",
     "test:zones": "for tz in UTC America/New_York Europe/Istanbul Asia/Kolkata Pacific/Auckland; do echo \"TZ=$tz\"; TZ=$tz jest --silent || exit 1; done",
     "build:web": "expo export --platform web",
     "e2e": "node e2e/run.mjs"

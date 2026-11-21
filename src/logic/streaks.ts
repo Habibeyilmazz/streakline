@@ -82,7 +82,9 @@ export function streak(habit: Habit, marks: Marks, today: DayKey): Streak {
   // An archived habit's streak stops where it was archived.
   const end = dayNumber(archivedBy(habit, today) ? habit.archivedOn! : today);
   // Backfilled check-ins may predate the habit's creation day.
-  const start = Math.min(dayNumber(habit.createdOn), ...done);
+  // A loop, not Math.min(...done): a backup may hold ~84,000 days, too many arguments for a phone's JS stack.
+  let start = dayNumber(habit.createdOn);
+  for (const n of done) if (n < start) start = n;
   const s = habit.schedule;
   let run = 0;
   let best = 0;

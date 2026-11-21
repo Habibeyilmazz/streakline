@@ -319,3 +319,20 @@ describe('archived habits', () => {
     expect(streak(later, marks([TODAY]), TODAY).current).toBe(1);
   });
 });
+
+describe('the largest history a backup can hold', () => {
+  // Every day the validator accepts, 1970-01-01..2199-12-31 (about 84,000 days).
+  // Spreading them into Math.min overflowed a small JS stack, as on a phone.
+  const all = eachDay('1970-01-01', '2199-12-31');
+  const old = habit({ kind: 'daily' }, '2026-01-01');
+
+  test('daily streak over every valid day', () => {
+    expect(streak(old, marks(all), '2199-12-31')).toEqual({ current: all.length, best: all.length, unit: 'day' });
+  });
+
+  test('weekly streak over every valid day', () => {
+    const s = streak(habit({ kind: 'weekly', times: 7 }, '2026-01-01'), marks(all), '2199-12-31');
+    expect(s.unit).toBe('week');
+    expect(s.current).toBeGreaterThan(11_900);
+  });
+});

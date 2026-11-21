@@ -107,6 +107,7 @@ e2e/                   Playwright scripts that drive the web build (run.mjs: beh
 npm run typecheck     # tsc --noEmit
 npm test              # unit tests (jest)
 npm run test:zones    # the same tests under UTC, New York, Istanbul, Kolkata and Auckland
+npm run test:small-stack  # the same tests on a 200 KB stack, closer to a phone's than Node's
 npm run build:web     # export the web build to dist/
 npm run e2e           # drive dist/ with Playwright; run build:web first (needs: npx playwright install chromium)
 npm run e2e -- --screenshots   # also rewrite docs/screenshots/
@@ -119,7 +120,7 @@ CI runs all of the above, `expo-doctor`, and a production JavaScript bundle for 
 
 ## What has and has not been verified
 
-Verified by running it: the logic and theme (224 unit tests, in five time zones), the calls made to the notification API (7 tests against a mocked `expo-notifications`, not a phone), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, archive and restore, reorder, dark theme, delete, midnight rollover, damaged-data recovery), that the app bundles for iOS and Android, and that `npx expo start` in a fresh clone serves the Expo Go manifest and the iOS and Android bundles.
+Verified by running it: the logic and theme (227 unit tests, in five time zones and on a small stack), the calls made to the notification API (7 tests against a mocked `expo-notifications`, not a phone), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, archive and restore, reorder, dark theme, delete, midnight rollover, damaged-data recovery), that the app bundles for iOS and Android, and that `npx expo start` in a fresh clone serves the Expo Go manifest and the iOS and Android bundles.
 
 Not verified: the app has **not yet been run on a physical phone or a simulator**. The parts that only exist on a phone (notifications, haptics, the share sheet for export, the native file picker for import, safe areas and keyboard behaviour) are written against the documented Expo SDK 58 APIs but are untested on a device. Please open an issue if something misbehaves.
 
