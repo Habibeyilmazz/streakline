@@ -3,6 +3,37 @@
 All notable changes to this project are documented here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [Unreleased]
+
+Found by cloning the repository fresh, following the README literally, and reviewing the code.
+
+### Fixed
+
+- Settings kept saying "Notifications are turned off for this app" after the very first Allow: the permission was read when a reminder was set, which is before the system prompt is answered, and not again. It is now re-read after every notification sync (`onNotificationsSynced`).
+- The Android notification channel is created before the permission request, the order Expo documents for Android 13+.
+- The half-hour-offset test (Kolkata) never ran, locally or in CI: the test compared against `Intl`'s resolved zone, and ICU reports `TZ=Asia/Kolkata` as `Asia/Calcutta`. Zone tests now compare `process.env.TZ`.
+- `npm install` in a fresh clone rewrote `package-lock.json` (it was out of step with `package.json`).
+- `npm run e2e` without a build crashed with a stack trace; it now says to run `npm run build:web`.
+
+### Changed
+
+- Reminder times accept `7:30` and `7.30` and are stored as `07:30` (`normalizeTime`).
+- The web build loads `src/notifications.web.ts`, an empty stand-in, instead of `expo-notifications`: no warning in the browser console, and the bundle went from 618 KB to 550 KB.
+- The end-to-end test fails on console warnings as well as errors.
+- README: exact Node versions, the Expo Go push warning, why `npm test` shows five skipped tests, build before e2e.
+
+### Added
+
+- `src/notifications.test.ts`: seven tests of the calls made to `expo-notifications` (mocked), 197 tests in total.
+
+### Notes for the next person
+
+- Still never run on a phone or simulator. Everything in the 0.1.0 device list below still applies, and the permission fix above was reasoned from the code and checked only against a mock.
+- `src/notifications.web.ts` must export the same names as `src/notifications.ts`; its `typeof Native.x` annotations make `tsc` catch a changed signature, but not a missing export.
+- No prefix of a valid reminder time is itself valid (there is a test), which is what lets the Settings field save as you type. Keep that property if `normalizeTime` is loosened (accepting `730` would break it: `210` is a prefix of `2100`).
+- Small inconsistency left alone: in the first, short week of an "N times a week" habit the streak and the review ask for fewer than N, but the Today row still says "of N this week".
+- Reviewed and found fine, so do not redo: stored-data validation vs what the reducer can create, timer restore after restart, freeze rules, review counts.
+
 ## [0.1.0] - 2026-11-21
 
 First version. Expo SDK 58, React Native 0.88, TypeScript.

@@ -20,7 +20,7 @@ The screenshots are taken from the running app (its web build, at 390x844) by th
 
 ## Quickstart
 
-You need Node 22.13 or newer and a phone with [Expo Go](https://expo.dev/go) installed (it must support Expo SDK 58).
+You need Node 22 (22.13 or newer) or Node 24 (24.3 or newer), and a phone with [Expo Go](https://expo.dev/go) installed (it must support Expo SDK 58).
 
 ```sh
 git clone https://github.com/Habibeyilmazz/streakline.git
@@ -31,6 +31,8 @@ npx expo start
 
 Scan the QR code from the terminal: with the Camera app on iOS, or from inside Expo Go on Android.
 The phone and the computer must be on the same network; if they cannot reach each other, run `npx expo start --tunnel`.
+
+Inside Expo Go, `expo-notifications` logs a warning that push notifications are not supported there. Streakline does not use push; it only schedules local notifications on the phone.
 
 No phone at hand? `npm run web` opens the same app in a browser at http://localhost:4120 (without notifications and haptics).
 
@@ -61,6 +63,7 @@ src/logic/             pure TypeScript, no React, fully unit-tested
   reminders.ts         which notifications should exist
 src/store.tsx          reducer + AsyncStorage persistence
 src/notifications.ts   schedules the reminder plan with expo-notifications
+                       (notifications.web.ts is the empty stand-in for the web build)
 src/files.ts           export (share sheet / download) and import (file picker)
 src/screens/           Today, HabitDetail, HabitEditor, Focus, Reflect, Review, Settings
 e2e/                   Playwright script that drives the web build
@@ -86,15 +89,17 @@ npm run typecheck     # tsc --noEmit
 npm test              # unit tests (jest)
 npm run test:zones    # the same tests under UTC, New York, Istanbul, Kolkata and Auckland
 npm run build:web     # export the web build to dist/
-npm run e2e           # drive dist/ with Playwright (needs: npx playwright install chromium)
+npm run e2e           # drive dist/ with Playwright; run build:web first (needs: npx playwright install chromium)
 npm run e2e -- --screenshots   # also rewrite docs/screenshots/
 ```
+
+`npm test` reports five tests as skipped: they are about one time zone each (DST in New York and Auckland, the half-hour offset in Kolkata) and only run when `TZ` is that zone, which is what `test:zones` does.
 
 CI runs all of the above, `expo-doctor`, and a production JavaScript bundle for iOS and Android.
 
 ## What has and has not been verified
 
-Verified by running it: the logic (173 unit tests, in five time zones), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, dark theme, delete, midnight rollover, damaged-data recovery), that the app bundles for iOS and Android, and that `npx expo start` in a fresh clone serves the Expo Go manifest and the iOS bundle.
+Verified by running it: the logic (190 unit tests, in five time zones), the calls made to the notification API (7 tests against a mocked `expo-notifications`, not a phone), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, dark theme, delete, midnight rollover, damaged-data recovery), that the app bundles for iOS and Android, and that `npx expo start` in a fresh clone serves the Expo Go manifest and the iOS bundle.
 
 Not verified: the app has **not yet been run on a physical phone or a simulator**. The parts that only exist on a phone (notifications, haptics, the share sheet for export, the native file picker for import, safe areas and keyboard behaviour) are written against the documented Expo SDK 58 APIs but are untested on a device. Please open an issue if something misbehaves.
 
@@ -106,7 +111,7 @@ Not verified: the app has **not yet been run on a physical phone or a simulator*
 - Weeks start on Monday.
 - Deleting a habit deletes its check-ins. There is no archive yet.
 - Import replaces all data; it does not merge.
-- Reminder times are typed as `HH:MM`; there is no time picker.
+- Reminder times are typed (`7:30` or `07:30`, 24-hour); there is no time picker.
 
 ## Roadmap
 
