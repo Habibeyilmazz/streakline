@@ -106,7 +106,7 @@ export function Settings({ version }: { version: string }) {
             keyboardType="numbers-and-punctuation"
             error={reminderError}
           />
-          {!allowed && (s.reflectionReminder || data.habits.some((h) => h.reminder)) && (
+          {!allowed && (s.reflectionReminder || data.habits.some((h) => h.reminder && !h.archivedOn)) && (
             <Txt variant="small" color={t.danger}>Notifications are turned off for this app in your phone's settings, so reminders will not appear.</Txt>
           )}
         </View>

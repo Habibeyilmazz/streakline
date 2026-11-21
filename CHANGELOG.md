@@ -5,6 +5,17 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Archive a habit (round 4, feature)
+
+Picked by using the app as a newcomer: the only way to stop tracking a habit was to delete it with all its check-ins, or to keep it and collect "missed" days forever.
+
+- Added: "Archive habit" in a habit's details. From that day on the habit is off Today, the focus timer's habit list, reminders, the weekly review and the all-habits heatmap; its check-ins, freezes, focus time, best streak and heatmap stay. The current streak is frozen at what it was ("Streak when archived").
+- Added: archived habits are listed at the bottom of Today; opening one shows its history and a "Restore habit" button. Restoring re-reads the archived days as missed (stated on screen and in the README).
+- Data: a habit may carry `archivedOn` (a day key). `validateData` accepts it, treats `null` or missing as active, and refuses a bad date; old backups load unchanged, so `BACKUP_VERSION` stays 1. The reducer refuses check-ins on or after the archive date, including a focus session's auto check-in, so it never saves what the validator would refuse.
+- Tests: 17 new unit tests (status, streaks, freeze rule, review, heatmap, reminders, reducer, backup) and an e2e stage (archive, Focus list, reload, restore). New README screenshot `archived-detail.png`.
+- Not done on purpose: a "pause" that excuses a stretch of days, reordering habits, quiet reminders once a habit is done. These remain on the roadmap.
+- Still never run on a phone.
+
 ### Security pass (round 3)
 
 The app has no network, accounts or backend, so its trust boundaries are an imported backup file and its own device storage. Reviewed by hand (the security-review skill could not run in this session); each fix has a regression test.
