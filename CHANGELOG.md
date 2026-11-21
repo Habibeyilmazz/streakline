@@ -5,6 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### First-run review (round 9)
+
+Cloned the repository fresh and followed the README literally on Node 22: `npm install`, `npx expo start` (Expo Go manifest, iOS and Android dev bundles served), `npm run web` (app loads at 390x844, no console errors), and every command under Development. All of it worked; nothing in the quickstart needed fixing.
+
+- Fixed (web build, a reported gap reproduced first): two tabs finishing the same focus timer logged it twice (25 min showed as 50 min in 2 sessions). The reducer now names a session after its timer's end instant and only clears the timer if that session is already logged, so `timer/finish` no longer takes a `sessionId`. Unit test, plus an e2e stage that runs two tabs on one fake clock (it fails without the fix).
+- README: test count corrected (224 logic and theme tests, plus 7 for notifications), the known limit about double-logging removed, the fresh-clone check now names the Android bundle too.
+- Reviewed by reading the logic, store and screens: no other bug found worth a change. Left alone: `reminderPlan` silently drops reminders beyond 60 (the iOS limit), which only matters with many weekday habits that all have reminders.
+- Still true: never run on a phone; no demo GIF; no drag and drop; the security-review skill was not run (this change adds no trust boundary); Lighthouse not run.
+
 ### Performance and accessibility pass (round 8)
 
 Measured first (web build, headless Chromium at 390x844, this laptop; `node e2e/perf.mjs` reproduces it, `axe-core` 4.10 was run by hand on every tab and the habit sheet in light and dark).
