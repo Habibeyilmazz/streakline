@@ -2,7 +2,7 @@
 // Usage: npm run build:web && npm run e2e [-- --screenshots]
 // With --screenshots the README images in docs/screenshots/ are rewritten.
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { chromium } from 'playwright';
@@ -15,6 +15,10 @@ const TODAY = '2026-11-21'; // a Saturday; the browser clock is pinned to noon U
 const shots = process.argv.includes('--screenshots') ? 'docs/screenshots' : null;
 const tmp = mkdtempSync(join(tmpdir(), 'streakline-e2e-'));
 
+if (!existsSync('dist/index.html')) {
+  console.error('dist/ is missing. Build the web app first: npm run build:web');
+  process.exit(1);
+}
 const server = await serve('dist', PORT);
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, timezoneId: 'UTC', locale: 'en-GB' });
@@ -23,7 +27,7 @@ await page.clock.install({ time: new Date(`${TODAY}T12:00:00Z`) });
 
 const problems = [];
 page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
-page.on('console', (m) => m.type() === 'error' && problems.push(`console.error: ${m.text()}`));
+page.on('console', (m) => ['error', 'warning'].includes(m.type()) && problems.push(`console ${m.type()}: ${m.text()}`));
 
 const button = (name) => page.getByRole('button', { name, exact: typeof name === 'string' });
 const tab = (name) => page.getByRole('tab', { name });
