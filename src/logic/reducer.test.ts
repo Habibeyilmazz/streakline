@@ -1,3 +1,4 @@
+import { validateData } from './backup';
 import { Action, State, reducer } from './reducer';
 import { EMPTY_DATA, Habit } from './types';
 
@@ -13,6 +14,14 @@ test('saving a new habit adds it with empty records; saving again edits it in pl
   const s = run([{ type: 'checkin/toggle', habitId: 'read', day: '2026-11-21' }, { type: 'habit/save', habit: { ...read, name: 'Read more' } }], base);
   expect(s.data.habits).toEqual([{ ...read, name: 'Read more' }]);
   expect(s.data.checkins.read).toEqual(['2026-11-21']); // history survives an edit
+});
+
+test('the 201st habit is refused, so the app never saves more than it can load', () => {
+  const full = run(Array.from({ length: 205 }, (_, i): Action => ({ type: 'habit/save', habit: { ...read, id: `h${i}` } })));
+  expect(full.data.habits).toHaveLength(200);
+  expect(() => validateData(JSON.parse(JSON.stringify(full.data)))).not.toThrow();
+  // Editing an existing habit still works at the limit.
+  expect(run([{ type: 'habit/save', habit: { ...read, id: 'h0', name: 'Renamed' } }], full).data.habits[0].name).toBe('Renamed');
 });
 
 test('check-in toggles on and off and stays sorted', () => {
@@ -100,6 +109,13 @@ describe('focus timer', () => {
     const paused = run([{ type: 'timer/start', kind: 'focus', habitId: null, now: NOON }, { type: 'timer/pause', now: NOON + 1000 }], base);
     expect(run([{ type: 'timer/finish', sessionId: 's' }], paused)).toBe(paused);
     expect(run([{ type: 'timer/stop' }], paused)).toMatchObject({ timer: null, data: { sessions: [] } });
+  });
+
+  test('a timer that already ran out cannot be paused into limbo', () => {
+    const started = run([{ type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON }], base);
+    const late = run([{ type: 'timer/pause', now: NOON + 25 * 60_000 }], started);
+    expect(late).toBe(started);
+    expect(run([{ type: 'timer/finish', sessionId: 's1' }], late).data.sessions).toHaveLength(1);
   });
 
   test('a focus session with no habit, or a deleted one, is still logged', () => {

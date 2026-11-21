@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Dispatch, ReactNode, createContext, useContext, useEffect, useMemo, useReducer, useState } from 'react';
+import { Dispatch, ReactNode, createContext, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
 import { success } from './haptics';
@@ -18,14 +18,19 @@ const UNREADABLE_KEY = 'streakline/unreadable';
 
 export const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
-export async function loadState(): Promise<State> {
+export type Loaded = { state: State; /** Stored data that failed validation, verbatim. */ unreadable: string | null };
+
+export async function loadState(): Promise<Loaded> {
   const [rawData, rawTimer] = await Promise.all([AsyncStorage.getItem(DATA_KEY), AsyncStorage.getItem(TIMER_KEY)]);
   let data = EMPTY_DATA;
+  let unreadable: string | null = null;
   if (rawData) {
     try {
       data = validateData(JSON.parse(rawData));
     } catch {
-      // Never overwrite data we could not read: park it where a person can recover it.
+      // Never silently overwrite data we could not read: keep a copy, and let
+      // the person decide (the app shows a recovery screen before continuing).
+      unreadable = rawData;
       await AsyncStorage.setItem(UNREADABLE_KEY, rawData);
     }
   }
@@ -35,7 +40,7 @@ export async function loadState(): Promise<State> {
   } catch {
     // a corrupt timer is simply dropped
   }
-  return { data, timer };
+  return { state: { data, timer }, unreadable };
 }
 
 type Store = State & { dispatch: Dispatch<Action>; today: DayKey; saveFailed: boolean };
@@ -68,16 +73,17 @@ export function StoreProvider({ initial, children }: { initial: State; children:
   const today = useToday();
   const { data, timer } = state;
 
+  // Data and timer are written together: if a finished session were saved but
+  // the cleared timer were not, the next launch would log the session twice.
   useEffect(() => {
-    AsyncStorage.setItem(DATA_KEY, JSON.stringify(data)).then(
+    AsyncStorage.multiSet([
+      [DATA_KEY, JSON.stringify(data)],
+      [TIMER_KEY, JSON.stringify(timer)],
+    ]).then(
       () => setSaveFailed(false),
       () => setSaveFailed(true),
     );
-  }, [data]);
-
-  useEffect(() => {
-    AsyncStorage.setItem(TIMER_KEY, JSON.stringify(timer)).catch(() => {});
-  }, [timer]);
+  }, [data, timer]);
 
   // Finish the timer when its end time passes, including after the app was suspended.
   const endsAt = timer?.endsAt ?? null;
@@ -98,9 +104,20 @@ export function StoreProvider({ initial, children }: { initial: State; children:
 
   const planKey = JSON.stringify(reminderPlan(data));
   const timerKind = timer?.kind;
+  const sync = (ask: boolean) =>
+    syncNotifications(
+      JSON.parse(planKey),
+      endsAt === null ? null : { at: endsAt, title: timerKind === 'break' ? 'Break over' : 'Focus session done', body: timerKind === 'break' ? 'Ready for the next one?' : 'Time is up. Nice work.' },
+      ask,
+    );
+  const syncRef = useRef(sync);
+  syncRef.current = sync;
+  useEffect(() => syncRef.current(true), [planKey, endsAt, timerKind]);
+  // Permission may have been granted in system settings while the app was away.
   useEffect(() => {
-    syncNotifications(JSON.parse(planKey), endsAt === null ? null : { at: endsAt, title: timerKind === 'break' ? 'Break over' : 'Focus session done', body: timerKind === 'break' ? 'Ready for the next one?' : 'Time is up. Nice work.' });
-  }, [planKey, endsAt, timerKind]);
+    const sub = AppState.addEventListener('change', (s) => s === 'active' && syncRef.current(false));
+    return () => sub.remove();
+  }, []);
 
   const value = useMemo(() => ({ data, timer, dispatch, today, saveFailed }), [data, timer, today, saveFailed]);
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

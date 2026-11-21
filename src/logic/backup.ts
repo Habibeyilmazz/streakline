@@ -7,7 +7,9 @@ import {
   HABIT_COLOR_COUNT,
   Habit,
   MAX_ANSWER_LENGTH,
+  MAX_HABITS,
   MAX_NAME_LENGTH,
+  MAX_SESSIONS,
   Reflection,
   Schedule,
   Settings,
@@ -16,12 +18,14 @@ import {
 // Backup files and stored state both come from outside the running app, so
 // they go through the same validator. It throws with a message a person can
 // act on, and returns a normalised copy (sorted, de-duplicated, no orphans).
+// Anything the validator refuses, the reducer must also refuse to create:
+// otherwise the app could save a state it cannot load again.
 
 export const BACKUP_VERSION = 1;
-const MAX_HABITS = 200;
-const MAX_SESSIONS = 50_000;
-const MIN_DAY = '2000-01-01';
-const MAX_DAY = '2100-12-31';
+// Wide enough that a phone with a badly wrong clock still writes days the next
+// launch can read back; narrow enough to bound the streak loops.
+const MIN_DAY = '1970-01-01';
+const MAX_DAY = '2199-12-31';
 
 class Invalid extends Error {}
 const fail = (msg: string): never => {

@@ -26,6 +26,11 @@ test('export then import returns exactly the same data', () => {
   expect(r).toEqual({ ok: true, data: sample });
 });
 
+test('days written by a phone whose clock had reset to 1970 can still be loaded', () => {
+  const d = validateData({ ...sample, checkins: { h1: ['1970-01-01'] } });
+  expect(d.checkins.h1).toEqual(['1970-01-01']);
+});
+
 test('the export names the app, a version and a timestamp', () => {
   const file = JSON.parse(exportBackup(sample, new Date('2026-11-21T10:00:00Z')));
   expect(file).toMatchObject({ app: 'streakline', version: 1, exportedAt: '2026-11-21T10:00:00.000Z' });
@@ -51,6 +56,7 @@ describe('rejects malformed habits', () => {
     [{ color: 1.5 }, 'colour'],
     [{ createdOn: '2026-02-30' }, 'not a valid date'],
     [{ createdOn: '0001-01-01' }, 'not a valid date'],
+    [{ createdOn: '2200-01-01' }, 'not a valid date'],
     [{ schedule: { kind: 'hourly' } }, 'unknown schedule'],
     [{ schedule: { kind: 'weekdays', days: [] } }, 'unknown schedule'],
     [{ schedule: { kind: 'weekdays', days: [7] } }, 'weekday'],

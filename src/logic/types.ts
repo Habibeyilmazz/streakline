@@ -70,4 +70,6 @@ export const EMPTY_DATA: Data = {
 
 export const HABIT_COLOR_COUNT = 6;
 export const MAX_NAME_LENGTH = 40;
+export const MAX_HABITS = 200;
+export const MAX_SESSIONS = 50_000;
 export const MAX_ANSWER_LENGTH = 1000;

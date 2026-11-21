@@ -71,11 +71,11 @@ e2e/                   Playwright script that drives the web build
 **Streak rules.**
 
 - Daily and weekday habits: the streak is the number of check-ins in the current unbroken run. A due day with no check-in and no freeze breaks it. Rest days and frozen days bridge the run without adding to it. Today never breaks a streak, because it is not over yet.
-- N-times-a-week habits: the streak counts consecutive Monday-to-Sunday weeks that reached N. The running week counts as soon as it reaches N and cannot break the streak before Sunday ends.
+- N-times-a-week habits: the streak counts consecutive Monday-to-Sunday weeks that reached N. The running week counts as soon as it reaches N and cannot break the streak before Sunday ends. A habit's first week only asks for as many days as were left in it.
 
 **Review numbers.** "Kept" is check-ins that were due. Frozen days are removed from what was due instead of being counted as done, extra check-ins cannot push a week above 100%, and when nothing was due the rate is shown as nothing rather than 0% or 100%.
 
-**Storage.** All data is one JSON document in AsyncStorage (on the web build: the browser's local storage). It is validated on every load; if it cannot be read, the app keeps the unreadable copy and stops instead of overwriting it.
+**Storage.** All data is one JSON document in AsyncStorage (on the web build: the browser's local storage). It is validated on every load. If it fails validation, the app shows a recovery screen that lets you save a copy of the raw data before you choose to start empty; it never overwrites it silently.
 
 **Backup format.** `{ "app": "streakline", "version": 1, "exportedAt": "...", "data": { habits, checkins, freezes, sessions, reflections, settings } }`. Importing replaces what is on the device, after showing what is in the file and asking.
 
@@ -94,13 +94,14 @@ CI runs all of the above, `expo-doctor`, and a production JavaScript bundle for 
 
 ## What has and has not been verified
 
-Verified by running it: the logic (168 unit tests, in five time zones), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, dark theme, delete), and that the app bundles for iOS and Android.
+Verified by running it: the logic (174 unit tests, in five time zones), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, dark theme, delete, midnight rollover, damaged-data recovery), and that the app bundles for iOS and Android.
 
 Not verified: the app has **not yet been run on a physical phone or a simulator**. The parts that only exist on a phone (notifications, haptics, the share sheet for export, the native file picker for import, safe areas and keyboard behaviour) are written against the documented Expo SDK 58 APIs but are untested on a device. Please open an issue if something misbehaves.
 
 ## Known limits
 
 - Reminders fire at their time even if the habit is already done; the app does not run in the background to check.
+- On Android the timer-end notification is scheduled without the exact-alarm permission, so the system may deliver it a little late.
 - Changing a habit's schedule re-reads its whole history under the new schedule.
 - Weeks start on Monday.
 - Deleting a habit deletes its check-ins. There is no archive yet.

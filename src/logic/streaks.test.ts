@@ -206,6 +206,15 @@ describe('N times a week', () => {
     expect(streak(h, m, '2027-01-04')).toEqual({ current: 1, best: 1, unit: 'week' });
   });
 
+  test('the first week only asks for the days that were left in it', () => {
+    const five = habit({ kind: 'weekly', times: 5 }, '2026-11-14'); // created on a Saturday
+    expect(streak(five, marks(['2026-11-14', '2026-11-15']), '2026-11-16').current).toBe(1);
+    expect(streak(five, marks(['2026-11-14']), '2026-11-16').current).toBe(0);
+    // From the second week on, the full five are needed.
+    const m = marks(['2026-11-14', '2026-11-15', '2026-11-16', '2026-11-17']);
+    expect(streak(five, m, '2026-11-23').current).toBe(0);
+  });
+
   test('once a week', () => {
     const h = habit({ kind: 'weekly', times: 1 }, '2026-10-05');
     const m = marks(['2026-10-11', '2026-10-12', '2026-10-25', '2026-10-26', '2026-11-08', '2026-11-09', '2026-11-21']);
@@ -215,7 +224,7 @@ describe('N times a week', () => {
 
 describe('dayStatus', () => {
   const mwf = habit({ kind: 'weekdays', days: [1, 3, 5] }, '2026-11-10');
-  const m = marks(['2026-11-16'], ['2026-11-18']);
+  const m = marks(['2026-11-16', '2026-11-23'], ['2026-11-18']);
   test.each([
     ['2026-11-09', 'none'], // before it existed
     ['2026-11-11', 'missed'], // Wed, due, nothing
@@ -224,6 +233,7 @@ describe('dayStatus', () => {
     ['2026-11-18', 'frozen'],
     ['2026-11-20', 'open'], // today
     ['2026-11-21', 'none'], // future
+    ['2026-11-23', 'none'], // future, even though it is marked done below
   ])('%s is %s', (day, expected) => {
     expect(dayStatus(mwf, day, '2026-11-20', m)).toBe(expected);
   });
@@ -251,6 +261,8 @@ describe('todayState', () => {
     // Last week's check-ins do not count towards this week.
     expect(todayState(three, TODAY, marks(['2026-11-13', '2026-11-14', '2026-11-15']))).toBe('due');
     expect(todayState(three, TODAY, marks(['2026-11-16', '2026-11-17', TODAY]))).toBe('done');
+    // A frozen day counts towards the week, exactly as it does for the streak.
+    expect(todayState(three, TODAY, marks(['2026-11-16', '2026-11-17'], ['2026-11-19']))).toBe('off');
   });
   test('a habit that starts in the future is off', () => {
     expect(todayState(habit({ kind: 'daily' }, '2026-12-01'), TODAY, marks())).toBe('off');

@@ -17,20 +17,20 @@ export async function notificationsAllowed(): Promise<boolean> {
   return (await Notifications.getPermissionsAsync()).granted;
 }
 
-async function ensurePermission(): Promise<boolean> {
+async function ensurePermission(ask: boolean): Promise<boolean> {
   const current = await Notifications.getPermissionsAsync();
   if (current.granted) return true;
-  if (!current.canAskAgain) return false;
+  if (!ask || !current.canAskAgain) return false;
   return (await Notifications.requestPermissionsAsync()).granted;
 }
 
 type OneOff = { at: number; title: string; body: string };
 
-async function apply(plan: PlannedReminder[], timerEnd: OneOff | null): Promise<void> {
+async function apply(plan: PlannedReminder[], timerEnd: OneOff | null, ask: boolean): Promise<void> {
   // The whole schedule is small, so replace it rather than track ids.
   await Notifications.cancelAllScheduledNotificationsAsync();
   if (plan.length === 0 && !timerEnd) return;
-  if (!(await ensurePermission())) return;
+  if (!(await ensurePermission(ask))) return;
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('reminders', { name: 'Reminders', importance: Notifications.AndroidImportance.DEFAULT });
   }
@@ -55,8 +55,11 @@ async function apply(plan: PlannedReminder[], timerEnd: OneOff | null): Promise<
 
 let queue: Promise<void> = Promise.resolve();
 
-/** Make the device's scheduled notifications match the plan. Calls run one at a time. */
-export function syncNotifications(plan: PlannedReminder[], timerEnd: OneOff | null): void {
+/**
+ * Make the device's scheduled notifications match the plan. Calls run one at a
+ * time. `ask` allows the system permission prompt; pass false for background refreshes.
+ */
+export function syncNotifications(plan: PlannedReminder[], timerEnd: OneOff | null, ask: boolean): void {
   if (!notificationsSupported) return;
-  queue = queue.then(() => apply(plan, timerEnd)).catch((e) => console.warn('Could not schedule notifications', e));
+  queue = queue.then(() => apply(plan, timerEnd, ask)).catch((e) => console.warn('Could not schedule notifications', e));
 }

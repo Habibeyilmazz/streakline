@@ -7,7 +7,6 @@ import { ActivityIndicator, Text, View, useColorScheme } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { version } from './package.json';
-import type { State } from './src/logic/reducer';
 import { Focus } from './src/screens/Focus';
 import { HabitDetail } from './src/screens/HabitDetail';
 import { HabitEditor } from './src/screens/HabitEditor';
@@ -15,9 +14,10 @@ import { Reflect } from './src/screens/Reflect';
 import { Review } from './src/screens/Review';
 import { Settings } from './src/screens/Settings';
 import { Today } from './src/screens/Today';
-import { StoreProvider, loadState, useStore } from './src/store';
+import { saveTextFile } from './src/files';
+import { Loaded, StoreProvider, loadState, useStore } from './src/store';
 import { ThemeContext, dark, light } from './src/theme';
-import { Button, Sheet, Tap, Txt } from './src/ui';
+import { Button, ConfirmButton, Sheet, Tap, Txt } from './src/ui';
 
 const TABS = ['Today', 'Focus', 'Reflect', 'Review', 'Settings'] as const;
 type Tab = (typeof TABS)[number];
@@ -84,11 +84,12 @@ function Shell() {
 
 export default function App() {
   const [fontsLoaded, fontError] = useFonts({ BricolageGrotesque_500Medium, BricolageGrotesque_700Bold });
-  const [initial, setInitial] = useState<State | null>(null);
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [armed, setArmed] = useState(false);
   const load = () => {
     setLoadFailed(false);
-    loadState().then(setInitial, () => setLoadFailed(true));
+    loadState().then(setLoaded, () => setLoadFailed(true));
   };
   useEffect(load, []);
 
@@ -104,7 +105,20 @@ export default function App() {
         </View>
       </ThemeContext.Provider>
     );
-  } else if (!initial || (!fontsLoaded && !fontError)) {
+  } else if (loaded?.unreadable) {
+    // The stored data failed validation. Continuing would replace it, so ask first.
+    const raw = loaded.unreadable;
+    body = (
+      <ThemeContext.Provider value={light}>
+        <View style={{ flex: 1, justifyContent: 'center', padding: 24, gap: 16, backgroundColor: light.bg }}>
+          <Txt variant="title">Your saved data is damaged and could not be opened.</Txt>
+          <Txt muted>Nothing has been deleted yet. Save a copy first; it is a JSON file that can often be repaired by hand and imported again.</Txt>
+          <Button label="Save a copy of the data" onPress={() => saveTextFile('streakline-damaged-data.json', raw).catch(() => {})} />
+          <ConfirmButton label="Start empty" confirmLabel="Tap again to start empty" armed={armed} onArm={() => setArmed(true)} onConfirm={() => setLoaded({ ...loaded, unreadable: null })} />
+        </View>
+      </ThemeContext.Provider>
+    );
+  } else if (!loaded || (!fontsLoaded && !fontError)) {
     body = (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: light.bg }}>
         <ActivityIndicator accessibilityLabel="Loading" color={light.ink} />
@@ -112,7 +126,7 @@ export default function App() {
     );
   } else {
     body = (
-      <StoreProvider initial={initial}>
+      <StoreProvider initial={loaded.state}>
         <Shell />
       </StoreProvider>
     );

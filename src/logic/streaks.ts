@@ -34,8 +34,10 @@ export type DayStatus =
   | 'none';
 
 export function dayStatus(habit: Habit, day: DayKey, today: DayKey, marks: Marks): DayStatus {
+  // A check-in dated after today (made before travelling west) waits until that day arrives.
+  if (day > today) return 'none';
   if (marks.done.has(day)) return 'done';
-  if (day > today || day < habit.createdOn) return 'none';
+  if (day < habit.createdOn) return 'none';
   if (marks.frozen.has(day)) return 'frozen';
   if (!isDue(habit.schedule, day)) return 'rest';
   if (day === today) return 'open';
@@ -54,7 +56,7 @@ export function todayState(habit: Habit, today: DayKey, marks: Marks): 'done' | 
   if (status !== 'open') return 'off';
   if (habit.schedule.kind !== 'weekly') return 'due';
   const monday = weekStart(today);
-  const thisWeek = [...marks.done].filter((d) => d >= monday && d <= today).length;
+  const thisWeek = [...marks.done, ...marks.frozen].filter((d) => d >= monday && d <= today).length;
   return thisWeek >= habit.schedule.times ? 'off' : 'due';
 }
 
@@ -69,6 +71,7 @@ export type Streak = { current: number; best: number; unit: 'day' | 'week' };
  * "N times a week" habits: the streak is the number of consecutive
  * Monday-to-Sunday weeks that reached N (a frozen day counts towards N).
  * The current week counts once it reaches N and never breaks the streak early.
+ * A habit's first week only asks for as many days as were left in it.
  */
 export function streak(habit: Habit, marks: Marks, today: DayKey): Streak {
   const done = new Set([...marks.done].map(dayNumber));
@@ -85,7 +88,8 @@ export function streak(habit: Habit, marks: Marks, today: DayKey): Streak {
     for (let w = start - ((start + 3) % 7); w <= end; w += 7) {
       let kept = 0;
       for (let n = w; n < w + 7 && n <= end; n++) if (done.has(n) || frozen.has(n)) kept++;
-      if (kept >= s.times) best = Math.max(best, ++run);
+      // The habit's first week may be too short to fit all N.
+      if (kept >= Math.min(s.times, w + 7 - start)) best = Math.max(best, ++run);
       else if (w + 7 <= end) run = 0; // that week is over and fell short
     }
     return { current: run, best, unit: 'week' };

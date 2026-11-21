@@ -27,8 +27,14 @@ export function Reflect() {
     },
     [dispatch],
   );
-  // A new day starts with empty answers.
-  useEffect(() => setDraft(data.reflections[today]?.answers ?? EMPTY), [today]); // eslint-disable-line react-hooks/exhaustive-deps
+  // At midnight, what was typed belongs to the day that just ended; the new day starts empty.
+  const shownDay = useRef(today);
+  useEffect(() => {
+    if (shownDay.current === today) return;
+    if (latest.current.draft.some((a) => a.trim())) dispatch({ type: 'reflection/save', day: shownDay.current, answers: latest.current.draft });
+    shownDay.current = today;
+    setDraft(data.reflections[today]?.answers ?? EMPTY);
+  }, [today]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const earlier = Object.keys(data.reflections).filter((d) => d < today).sort().reverse().slice(0, 30);
 

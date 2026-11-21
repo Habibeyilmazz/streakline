@@ -216,6 +216,31 @@ try {
   await tab('Today').click();
   await seen(text('Nothing to track yet.'));
 
+  stage('midnight: an unsaved reflection goes to the day it was written on');
+  await tab('Reflect').click();
+  await page.getByLabel(prompts[0]).fill('Written just before midnight.');
+  await page.clock.fastForward('12:00:30'); // noon -> past midnight
+  await seen(text('Evening reflection, Sunday'));
+  assert.equal(await page.getByLabel(prompts[0]).inputValue(), '');
+  await seen(text('Saturday, 21 November'));
+  await seen(text('Written just before midnight.'));
+  await tab('Today').click();
+  await seen(text('22 November'));
+
+  stage('damaged stored data: a copy is offered before anything is replaced');
+  const damaged = '{"habits":"oops"}';
+  await page.evaluate((raw) => localStorage.setItem('streakline/data/v1', raw), damaged);
+  await page.reload();
+  await seen(text('Your saved data is damaged and could not be opened.'));
+  const copy = page.waitForEvent('download');
+  await button('Save a copy of the data').click();
+  assert.equal(readFileSync(await (await copy).path(), 'utf8'), damaged);
+  assert.equal(await page.evaluate(() => localStorage.getItem('streakline/data/v1')), damaged); // still untouched
+  await button('Start empty').click();
+  await button('Tap again to start empty').click();
+  await seen(text('Nothing to track yet.'));
+  assert.equal(await page.evaluate(() => localStorage.getItem('streakline/unreadable')), damaged);
+
   assert.deepEqual(problems, []);
   console.log('e2e passed');
 } catch (e) {

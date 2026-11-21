@@ -1,7 +1,7 @@
 import { DayKey, dayKey } from './dates';
 import { freezeBlocker, marksOf } from './streaks';
-import { Timer, pauseTimer, resumeTimer, startTimer } from './timer';
-import { Data, Habit, MAX_ANSWER_LENGTH, Settings } from './types';
+import { Timer, isFinished, pauseTimer, resumeTimer, startTimer } from './timer';
+import { Data, Habit, MAX_ANSWER_LENGTH, MAX_HABITS, MAX_SESSIONS, Settings } from './types';
 
 export type State = { data: Data; timer: Timer | null };
 
@@ -32,6 +32,7 @@ export function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'habit/save': {
       const h = action.habit;
+      if (!exists(h.id) && data.habits.length >= MAX_HABITS) return state;
       return withData({
         habits: exists(h.id) ? data.habits.map((x) => (x.id === h.id ? h : x)) : [...data.habits, h],
         checkins: { ...data.checkins, [h.id]: data.checkins[h.id] ?? [] },
@@ -89,7 +90,8 @@ export function reducer(state: State, action: Action): State {
       return { ...state, timer: startTimer(action.kind, minutes, action.kind === 'focus' ? habitId : null, action.now) };
     }
     case 'timer/pause':
-      return timer ? { ...state, timer: pauseTimer(timer, action.now) } : state;
+      // A timer that has already run out must finish, not freeze at 00:00.
+      return timer && !isFinished(timer, action.now) ? { ...state, timer: pauseTimer(timer, action.now) } : state;
     case 'timer/resume':
       return timer ? { ...state, timer: resumeTimer(timer, action.now) } : state;
     case 'timer/stop':
@@ -106,7 +108,7 @@ export function reducer(state: State, action: Action): State {
         timer: null,
         data: {
           ...data,
-          sessions: [...data.sessions, { id: action.sessionId, habitId, day, minutes }],
+          sessions: [...data.sessions, { id: action.sessionId, habitId, day, minutes }].slice(-MAX_SESSIONS),
           ...(checkIn && {
             checkins: { ...data.checkins, [habitId]: added(data.checkins[habitId], day) },
             freezes: { ...data.freezes, [habitId]: (data.freezes[habitId] ?? []).filter((d) => d !== day) },

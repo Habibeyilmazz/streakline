@@ -3,7 +3,7 @@ import { View } from 'react-native';
 
 import { WEEKDAYS_SHORT } from '../logic/dates';
 import { parseTime } from '../logic/reminders';
-import { HABIT_COLOR_COUNT, Habit, MAX_NAME_LENGTH, Schedule } from '../logic/types';
+import { HABIT_COLOR_COUNT, Habit, MAX_HABITS, MAX_NAME_LENGTH, Schedule } from '../logic/types';
 import { notificationsSupported } from '../notifications';
 import { newId, useStore } from '../store';
 import { HABIT_COLOR_NAMES, useTheme } from '../theme';
@@ -18,7 +18,7 @@ const MONDAY_FIRST = [1, 2, 3, 4, 5, 6, 0];
 
 /** Create a habit, or edit `habit` when given. Calls onDone after saving or deleting. */
 export function HabitEditor({ habit, onDone }: { habit?: Habit; onDone: (deleted?: boolean) => void }) {
-  const { dispatch, today } = useStore();
+  const { data, dispatch, today } = useStore();
   const t = useTheme();
   const [name, setName] = useState(habit?.name ?? '');
   const [color, setColor] = useState(habit?.color ?? 0);
@@ -30,7 +30,13 @@ export function HabitEditor({ habit, onDone }: { habit?: Habit; onDone: (deleted
   const [armed, setArmed] = useState(false);
 
   const trimmed = name.trim();
-  const nameError = !trimmed ? 'Give the habit a name.' : null;
+  const nameError = !trimmed
+    ? 'Give the habit a name.'
+    : trimmed.length > MAX_NAME_LENGTH // emoji count double, so maxLength alone does not guarantee this
+      ? 'That name is too long. Shorten it a little.'
+      : !habit && data.habits.length >= MAX_HABITS
+        ? `You have reached the limit of ${MAX_HABITS} habits.`
+        : null;
   const daysError = kind === 'weekdays' && days.length === 0 ? 'Pick at least one day.' : null;
   const reminderError = reminder && !parseTime(reminder) ? 'Use 24-hour time, like 07:30 or 21:00.' : null;
 
