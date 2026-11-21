@@ -120,13 +120,13 @@ export function Review() {
             label="Past year across all habits. Darker days had more of what was due done."
             cell={(day) => {
               const level = levels.get(day) ?? 0;
-              return day > today ? {} : level === 0 ? { backgroundColor: t.faint } : { backgroundColor: t.habit[0], opacity: LEVEL_OPACITY[level] };
+              return day > today ? {} : level === 0 ? { backgroundColor: t.faint } : { backgroundColor: t.ink, opacity: LEVEL_OPACITY[level] };
             }}
           />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Txt variant="small" muted>None</Txt>
             {[0, 1, 2, 3, 4].map((l) => (
-              <View key={l} style={[{ width: 14, height: 14, borderRadius: 4 }, l === 0 ? { backgroundColor: t.faint } : { backgroundColor: t.habit[0], opacity: LEVEL_OPACITY[l] }]} />
+              <View key={l} style={[{ width: 14, height: 14, borderRadius: 4 }, l === 0 ? { backgroundColor: t.faint } : { backgroundColor: t.ink, opacity: LEVEL_OPACITY[l] }]} />
             ))}
             <Txt variant="small" muted>All done</Txt>
           </View>

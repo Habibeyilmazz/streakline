@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { tap } from '../haptics';
 import { addDays, dayMonthLong, eachDay, weekdayLong } from '../logic/dates';
 import { weekCount } from '../logic/stats';
-import { dayStatus, describeSchedule, marksOf, streak } from '../logic/streaks';
+import { dayStatus, describeSchedule, marksOf, streak, todayState } from '../logic/streaks';
 import type { Habit } from '../logic/types';
 import { useStore } from '../store';
 import { fonts, useTheme } from '../theme';
@@ -18,12 +18,11 @@ export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: 
 
   const rows = data.habits.map((habit) => {
     const marks = marksOf(data, habit.id);
-    return { habit, statuses: lineDays.map((d) => dayStatus(habit, d, today, marks)), streak: streak(habit, marks, today) };
+    return { habit, statuses: lineDays.map((d) => dayStatus(habit, d, today, marks)), streak: streak(habit, marks, today), state: todayState(habit, today, marks) };
   });
-  const isToday = (r: (typeof rows)[number]) => r.statuses[LINE_DAYS - 1] !== 'rest' && r.statuses[LINE_DAYS - 1] !== 'none';
-  const dueRows = rows.filter(isToday);
-  const restRows = rows.filter((r) => !isToday(r));
-  const doneCount = dueRows.filter((r) => r.statuses[LINE_DAYS - 1] === 'done').length;
+  const dueRows = rows.filter((r) => r.state !== 'off');
+  const restRows = rows.filter((r) => r.state === 'off');
+  const doneCount = dueRows.filter((r) => r.state === 'done').length;
 
   const toggle = (habit: Habit) => {
     tap(data.settings.haptics);
@@ -89,7 +88,7 @@ export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: 
                 </Txt>
                 <View style={{ flexDirection: 'row', gap: 4 }} aria-hidden>
                   {dueRows.map((r) => (
-                    <View key={r.habit.id} style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: r.statuses[LINE_DAYS - 1] === 'done' ? t.habit[r.habit.color] : t.line }} />
+                    <View key={r.habit.id} style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: r.state === 'done' ? t.habit[r.habit.color] : t.line }} />
                   ))}
                 </View>
               </View>
@@ -104,7 +103,7 @@ export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: 
 
           {restRows.length > 0 && (
             <View>
-              <Txt variant="heading" muted accessibilityRole="header">Not scheduled today</Txt>
+              <Txt variant="heading" muted accessibilityRole="header">Not due today</Txt>
               {restRows.map((r, i) => (
                 <View key={r.habit.id}>
                   {i > 0 && <Rule />}

@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Unit tests in five time zones
+        run: npm run test:zones
+      - name: Expo doctor
+        run: npx --yes expo-doctor
+      - name: Build web
+        run: npm run build:web
+      - name: Bundle for iOS and Android
+        run: npx expo export --platform ios --platform android --output-dir dist-native
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end test (web build, 390x844)
+        run: npm run e2e

@@ -1,5 +1,5 @@
 import { addDays, eachDay } from './dates';
-import { FREEZES_PER_MONTH, Marks, dayStatus, describeSchedule, freezeBlocker, isDue, streak } from './streaks';
+import { FREEZES_PER_MONTH, Marks, dayStatus, describeSchedule, freezeBlocker, isDue, streak, todayState } from './streaks';
 import type { Habit, Schedule } from './types';
 
 const habit = (schedule: Schedule, createdOn = '2026-01-01'): Habit => ({ id: 'h', name: 'Read', color: 0, schedule, createdOn, reminder: null });
@@ -232,6 +232,28 @@ describe('dayStatus', () => {
     const h = habit({ kind: 'weekly', times: 3 });
     expect(dayStatus(h, addDays(TODAY, -1), TODAY, marks())).toBe('rest');
     expect(dayStatus(h, TODAY, TODAY, marks())).toBe('open');
+  });
+});
+
+describe('todayState', () => {
+  test('daily: due until checked in', () => {
+    expect(todayState(daily, TODAY, marks())).toBe('due');
+    expect(todayState(daily, TODAY, marks([TODAY]))).toBe('done');
+  });
+  test('a rest day or a frozen day asks for nothing', () => {
+    expect(todayState(habit({ kind: 'weekdays', days: [1, 3, 5] }), TODAY, marks())).toBe('off'); // Saturday
+    expect(todayState(daily, TODAY, marks([], [TODAY]))).toBe('off');
+  });
+  test('N times a week: due until the week reaches N, then off', () => {
+    const three = habit({ kind: 'weekly', times: 3 });
+    expect(todayState(three, TODAY, marks(['2026-11-16', '2026-11-17']))).toBe('due');
+    expect(todayState(three, TODAY, marks(['2026-11-16', '2026-11-17', '2026-11-19']))).toBe('off');
+    // Last week's check-ins do not count towards this week.
+    expect(todayState(three, TODAY, marks(['2026-11-13', '2026-11-14', '2026-11-15']))).toBe('due');
+    expect(todayState(three, TODAY, marks(['2026-11-16', '2026-11-17', TODAY]))).toBe('done');
+  });
+  test('a habit that starts in the future is off', () => {
+    expect(todayState(habit({ kind: 'daily' }, '2026-12-01'), TODAY, marks())).toBe('off');
   });
 });
 

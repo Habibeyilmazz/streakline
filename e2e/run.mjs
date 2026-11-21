@@ -86,7 +86,7 @@ try {
   stage('today: schedules, streaks, streak line');
   await tab('Today').click();
   await seen(text('2 of 4 done today'));
-  await seen(text('Not scheduled today')); // Strength training is Mon, Wed, Fri
+  await seen(text('Not due today')); // Strength training is Mon, Wed, Fri
   await seen(button(/Read 20 pages, Every day, 38 day streak/));
   await seen(button(/Morning run, \d of 3 this week, \d+ week streak/));
   await seen(button(/Strength training, Mon, Wed, Fri, \d+ day streak/));

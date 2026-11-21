@@ -1,4 +1,4 @@
-import { DayKey, WEEKDAYS_SHORT, addDays, dayNumber, weekday } from './dates';
+import { DayKey, WEEKDAYS_SHORT, addDays, dayNumber, weekStart, weekday } from './dates';
 import type { Data, Habit, Schedule } from './types';
 
 /** The days a habit was checked in and the days it was frozen. */
@@ -41,6 +41,21 @@ export function dayStatus(habit: Habit, day: DayKey, today: DayKey, marks: Marks
   if (day === today) return 'open';
   // With "N times a week" no single day is ever missed, only a whole week.
   return habit.schedule.kind === 'weekly' ? 'rest' : 'missed';
+}
+
+/**
+ * What the Today list should ask for: 'due' means it still wants a check-in
+ * today. An "N times a week" habit stops being due once the week reached N,
+ * and a frozen day asks for nothing.
+ */
+export function todayState(habit: Habit, today: DayKey, marks: Marks): 'done' | 'due' | 'off' {
+  const status = dayStatus(habit, today, today, marks);
+  if (status === 'done') return 'done';
+  if (status !== 'open') return 'off';
+  if (habit.schedule.kind !== 'weekly') return 'due';
+  const monday = weekStart(today);
+  const thisWeek = [...marks.done].filter((d) => d >= monday && d <= today).length;
+  return thisWeek >= habit.schedule.times ? 'off' : 'due';
 }
 
 export type Streak = { current: number; best: number; unit: 'day' | 'week' };

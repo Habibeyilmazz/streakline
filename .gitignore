@@ -47,3 +47,4 @@ yarn-error.*
 coverage/
 test-results/
 playwright-report/
+dist-native/

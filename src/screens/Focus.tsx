@@ -28,7 +28,7 @@ function Clock({ ms, color }: { ms: number; color: string }) {
   return (
     <View accessible accessibilityRole="timer" accessibilityLabel={`${+min} minutes ${+sec} seconds left`} style={{ flexDirection: 'row', justifyContent: 'center' }}>
       {text.split('').map((c, i) => (
-        <Text key={i} style={{ width: c === ':' ? 30 : 60, textAlign: 'center', fontFamily: fonts.display, fontSize: 92, lineHeight: 100, color }}>{c}</Text>
+        <Text key={i} style={{ width: c === ':' ? 28 : 56, textAlign: 'center', fontFamily: fonts.display, fontSize: 92, lineHeight: 100, color }}>{c}</Text>
       ))}
     </View>
   );

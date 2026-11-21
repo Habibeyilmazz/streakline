@@ -11,6 +11,7 @@ import { isFinished, validateTimer } from './logic/timer';
 import { EMPTY_DATA } from './logic/types';
 import { syncNotifications } from './notifications';
 
+// shortcut: all data is one JSON value (tens of KB per year of use); move to expo-sqlite if it nears AsyncStorage's ~2 MB per-value limit on Android.
 const DATA_KEY = 'streakline/data/v1';
 const TIMER_KEY = 'streakline/timer/v1';
 const UNREADABLE_KEY = 'streakline/unreadable';
