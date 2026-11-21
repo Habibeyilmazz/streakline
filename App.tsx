@@ -3,7 +3,7 @@ import { BricolageGrotesque_700Bold } from '@expo-google-fonts/bricolage-grotesq
 import { useFonts } from 'expo-font';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, Platform, Text, View, useColorScheme } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { version } from './package.json';
@@ -32,6 +32,15 @@ function Shell() {
   const [sheet, setSheet] = useState<SheetState>(null);
   const close = () => setSheet(null);
   const habit = sheet && sheet.kind !== 'new' ? data.habits.find((h) => h.id === sheet.id) : undefined;
+
+  // Web: draw the keyboard focus ring in the theme's ink instead of the browser's blue.
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const style = document.createElement('style');
+    style.textContent = `:focus-visible { outline: 2px solid ${theme.ink}; outline-offset: 2px; }`;
+    document.head.append(style);
+    return () => style.remove();
+  }, [theme]);
 
   return (
     <ThemeContext.Provider value={theme}>
@@ -87,6 +96,8 @@ export default function App() {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [armed, setArmed] = useState(false);
+  // The saved theme is not known before the data loads; follow the phone until then.
+  const early = useColorScheme() === 'dark' ? dark : light;
   const load = () => {
     setLoadFailed(false);
     loadState().then(setLoaded, () => setLoadFailed(true));
@@ -97,8 +108,8 @@ export default function App() {
   if (loadFailed) {
     // Starting empty here would overwrite whatever is stored, so stop instead.
     body = (
-      <ThemeContext.Provider value={light}>
-        <View style={{ flex: 1, justifyContent: 'center', padding: 24, gap: 16, backgroundColor: light.bg }}>
+      <ThemeContext.Provider value={early}>
+        <View style={{ flex: 1, justifyContent: 'center', padding: 24, gap: 16, backgroundColor: early.bg }}>
           <Txt variant="title">Your data could not be read from this device.</Txt>
           <Txt muted>Nothing has been changed. Try again, or restart the app.</Txt>
           <Button label="Try again" onPress={load} />
@@ -109,8 +120,8 @@ export default function App() {
     // The stored data failed validation. Continuing would replace it, so ask first.
     const raw = loaded.unreadable;
     body = (
-      <ThemeContext.Provider value={light}>
-        <View style={{ flex: 1, justifyContent: 'center', padding: 24, gap: 16, backgroundColor: light.bg }}>
+      <ThemeContext.Provider value={early}>
+        <View style={{ flex: 1, justifyContent: 'center', padding: 24, gap: 16, backgroundColor: early.bg }}>
           <Txt variant="title">Your saved data is damaged and could not be opened.</Txt>
           <Txt muted>Nothing has been deleted yet. Save a copy first; it is a JSON file that can often be repaired by hand and imported again.</Txt>
           <Button label="Save a copy of the data" onPress={() => saveTextFile('streakline-damaged-data.json', raw).catch(() => {})} />
@@ -120,8 +131,8 @@ export default function App() {
     );
   } else if (!loaded || (!fontsLoaded && !fontError)) {
     body = (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: light.bg }}>
-        <ActivityIndicator accessibilityLabel="Loading" color={light.ink} />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: early.bg }}>
+        <ActivityIndicator accessibilityLabel="Loading" color={early.ink} />
       </View>
     );
   } else {

@@ -6,7 +6,10 @@ export type Theme = {
   surface: string;
   ink: string;
   muted: string;
+  /** Hairlines between rows. Too faint to mark a control; use `edge` for that. */
   line: string;
+  /** Outline of inputs and unselected choices: at least 3:1 against bg and surface. */
+  edge: string;
   /** Fill for rest days and empty heatmap cells. */
   faint: string;
   frost: string;
@@ -23,9 +26,10 @@ export const light: Theme = {
   ink: '#16202A',
   muted: '#566370',
   line: '#D8DDD8',
+  edge: '#7A8590',
   faint: '#E4E8E3',
   frost: '#CFE4F3',
-  frostEdge: '#5F93BD',
+  frostEdge: '#588EBA',
   danger: '#B3261E',
   habit: ['#2A7A4B', '#1D6BB0', '#84399A', '#BF4518', '#8F6400', '#BD2B5E'],
 };
@@ -37,6 +41,7 @@ export const dark: Theme = {
   ink: '#EAF0F4',
   muted: '#9DAAB5',
   line: '#2E3944',
+  edge: '#667380',
   faint: '#242E38',
   frost: '#24435C',
   frostEdge: '#8EBFE6',

@@ -31,7 +31,7 @@ export function Review() {
   ].filter(Boolean);
 
   const arrow = (label: string, delta: number, disabled?: boolean) => (
-    <Tap onPress={() => setStart(addDays(start, delta))} disabled={disabled} accessibilityLabel={label} style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 1.5, borderColor: t.line, alignItems: 'center', justifyContent: 'center' }}>
+    <Tap onPress={() => setStart(addDays(start, delta))} disabled={disabled} accessibilityLabel={label} style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 1.5, borderColor: t.edge, alignItems: 'center', justifyContent: 'center' }}>
       <View style={{ width: 11, height: 11, borderColor: t.ink, borderLeftWidth: 2.5, borderBottomWidth: 2.5, transform: [{ rotate: delta < 0 ? '45deg' : '-135deg' }], marginLeft: delta < 0 ? 4 : -4 }} />
     </Tap>
   );
@@ -48,7 +48,12 @@ export function Review() {
       </View>
 
       <View style={{ gap: 6 }}>
-        {r.rate === null ? (
+        {data.habits.length === 0 ? (
+          <>
+            <Txt variant="title">No habits to review yet.</Txt>
+            <Txt muted>Add a habit on Today. Each week this page counts what you kept, what you missed and what is still open.</Txt>
+          </>
+        ) : r.rate === null ? (
           <Txt variant="title">Nothing was due this week.</Txt>
         ) : (
           <Txt variant="title">

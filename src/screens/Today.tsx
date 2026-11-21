@@ -52,7 +52,7 @@ export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: 
         </Tap>
         <Tap onPress={() => onOpen(habit.id)} accessibilityLabel={`${habit.name}, ${detail}, ${s.current} ${s.unit} streak. Open details`} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ flex: 1, gap: 2 }}>
-            <Txt variant="heading" numberOfLines={1}>{habit.name}</Txt>
+            <Txt variant="heading" numberOfLines={2}>{habit.name}</Txt>
             <Txt variant="small" muted numberOfLines={1} style={{ marginBottom: 6 }}>{detail}</Txt>
             <StreakLine statuses={statuses} color={color} />
           </View>
@@ -83,7 +83,7 @@ export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: 
           {dueRows.length > 0 && (
             <View>
               <View style={{ gap: 8, marginBottom: 6 }}>
-                <Txt variant="heading" accessibilityRole="header">
+                <Txt variant="heading" accessibilityRole="header" aria-level={2}>
                   {doneCount === dueRows.length ? `All ${dueRows.length} done today` : `${doneCount} of ${dueRows.length} done today`}
                 </Txt>
                 <View style={{ flexDirection: 'row', gap: 4 }} aria-hidden>
@@ -103,7 +103,7 @@ export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: 
 
           {restRows.length > 0 && (
             <View>
-              <Txt variant="heading" muted accessibilityRole="header">Not due today</Txt>
+              <Txt variant="heading" muted accessibilityRole="header" aria-level={2}>Not due today</Txt>
               {restRows.map((r, i) => (
                 <View key={r.habit.id}>
                   {i > 0 && <Rule />}

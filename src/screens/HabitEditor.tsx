@@ -73,7 +73,7 @@ export function HabitEditor({ habit, onDone }: { habit?: Habit; onDone: (deleted
                     accessibilityRole="checkbox"
                     aria-checked={on}
                     accessibilityLabel={WEEKDAYS_SHORT[d]}
-                    style={{ flex: 1, minHeight: 46, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', borderColor: on ? t.ink : t.line, backgroundColor: on ? t.ink : 'transparent' }}
+                    style={{ flex: 1, minHeight: 46, borderRadius: 12, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', borderColor: on ? t.ink : t.edge, backgroundColor: on ? t.ink : 'transparent' }}
                   >
                     <Txt variant="small" color={on ? t.bg : t.ink} style={{ fontWeight: '600' }}>{WEEKDAYS_SHORT[d]}</Txt>
                   </Tap>

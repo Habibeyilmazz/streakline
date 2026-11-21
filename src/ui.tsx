@@ -1,6 +1,8 @@
-import { ComponentRef, ReactNode, useRef } from 'react';
+import { ComponentRef, ReactNode, useEffect, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   Modal,
+  Platform,
   Pressable,
   PressableProps,
   ScrollView,
@@ -35,10 +37,22 @@ export function Txt({ variant = 'body', muted, color, style, ...rest }: TextProp
 
 /** Pressable with pressed and disabled states. Role defaults to button. */
 export function Tap({ style, children, ...rest }: Omit<PressableProps, 'style' | 'children'> & { style?: StyleProp<ViewStyle>; children?: ReactNode }) {
+  // react-native-web presses on Enter for every role but on Space only for buttons,
+  // so Space on a checkbox, radio or tab scrolled the page instead of activating it.
+  const needsSpace = Platform.OS === 'web' && (rest.accessibilityRole ?? 'button') !== 'button' && !rest.disabled;
   return (
     <Pressable
       accessibilityRole="button"
       {...rest}
+      onKeyDown={
+        needsSpace
+          ? (e) => {
+              if (e.nativeEvent.key !== ' ') return;
+              e.preventDefault();
+              (rest.onPress as (() => void) | undefined)?.();
+            }
+          : undefined
+      }
       style={(s) => [
         style,
         s.pressed && { opacity: 0.6 },
@@ -79,7 +93,7 @@ export function Chip({ label, selected, onPress, color, accessibilityLabel }: { 
       accessibilityRole="radio"
       aria-checked={selected}
       accessibilityLabel={accessibilityLabel ?? label}
-      style={{ minHeight: 44, minWidth: 44, paddingHorizontal: 14, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: selected ? fill : t.line, backgroundColor: selected ? fill : 'transparent' }}
+      style={{ minHeight: 44, minWidth: 44, paddingHorizontal: 14, borderRadius: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: selected ? fill : t.edge, backgroundColor: selected ? fill : 'transparent' }}
     >
       <Text style={{ fontSize: 15, fontWeight: '600', color: selected ? t.bg : t.ink }}>{label}</Text>
     </Tap>
@@ -102,10 +116,11 @@ export function Field({ label, hint, error, ...rest }: TextInputProps & { label:
       {hint ? <Txt variant="small" muted>{hint}</Txt> : null}
       <TextInput
         accessibilityLabel={label}
+        aria-invalid={!!error}
         placeholderTextColor={t.muted}
         {...rest}
         style={[
-          { minHeight: 50, borderWidth: 1.5, borderColor: error ? t.danger : t.line, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, lineHeight: 22, color: t.ink, backgroundColor: t.surface },
+          { minHeight: 50, borderWidth: 1.5, borderColor: error ? t.danger : t.edge, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, lineHeight: 22, color: t.ink, backgroundColor: t.surface },
           rest.multiline && { minHeight: 92, textAlignVertical: 'top' },
           rest.style,
         ]}
@@ -123,7 +138,15 @@ export function ToggleRow({ label, hint, value, onChange }: { label: string; hin
         <Txt>{label}</Txt>
         {hint ? <Txt variant="small" muted>{hint}</Txt> : null}
       </View>
-      <Switch accessibilityLabel={label} value={value} onValueChange={onChange} trackColor={{ true: t.habit[0], false: t.line }} />
+      <Switch
+        accessibilityLabel={label}
+        value={value}
+        onValueChange={onChange}
+        trackColor={{ true: t.habit[0], false: t.edge }}
+        thumbColor="#FFFFFF"
+        // Web only: without these the thumb turns teal when on, and the switch is 20px tall.
+        {...(Platform.OS === 'web' ? { activeThumbColor: '#FFFFFF', style: { height: 28 } } : null)}
+      />
     </View>
   );
 }
@@ -136,7 +159,7 @@ export function ConfirmButton({ label, confirmLabel, armed, onArm, onConfirm }: 
 export function Section({ title, children, style }: { title?: string; children: ReactNode; style?: StyleProp<ViewStyle> }) {
   return (
     <View style={[{ gap: 12 }, style]}>
-      {title ? <Txt variant="heading" accessibilityRole="header">{title}</Txt> : null}
+      {title ? <Txt variant="heading" accessibilityRole="header" aria-level={2}>{title}</Txt> : null}
       {children}
     </View>
   );
@@ -161,11 +184,23 @@ export function Page({ children, bottomPad = 32 }: { children: ReactNode; bottom
   );
 }
 
+/** The system "reduce motion" setting (on the web: prefers-reduced-motion). */
+export function useReduceMotion(): boolean {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduce, () => {});
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduce);
+    return () => sub.remove();
+  }, []);
+  return reduce;
+}
+
 export function Sheet({ visible, title, onClose, children }: { visible: boolean; title: string; onClose: () => void; children: ReactNode }) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  const reduceMotion = useReduceMotion();
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+    <Modal visible={visible} animationType={reduceMotion ? 'none' : 'slide'} onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: t.bg, paddingTop: insets.top, paddingBottom: insets.bottom }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingLeft: 20, paddingRight: 8, minHeight: 56, width: '100%', maxWidth: 560, alignSelf: 'center' }}>
           <Txt variant="heading" accessibilityRole="header" numberOfLines={1} style={{ flex: 1 }}>{title}</Txt>
@@ -249,6 +284,9 @@ const GAP = 3;
 export function Heatmap({ weeks, cell, label }: { weeks: DayKey[][]; cell: (day: DayKey) => ViewStyle; label: string }) {
   const t = useTheme();
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  // Show whole week columns only, so the left edge never cuts a cell in half.
+  const [room, setRoom] = useState(0);
+  const columns = Math.min(weeks.length, Math.floor((room + GAP) / (CELL + GAP)));
   return (
     <View accessible accessibilityRole="image" accessibilityLabel={label} style={{ flexDirection: 'row', gap: 6 }}>
       <View style={{ paddingTop: 20, gap: GAP }}>
@@ -256,7 +294,15 @@ export function Heatmap({ weeks, cell, label }: { weeks: DayKey[][]; cell: (day:
           <Text key={i} style={{ height: CELL, fontSize: 11, lineHeight: CELL, color: t.muted }}>{d}</Text>
         ))}
       </View>
-      <ScrollView ref={scroll} horizontal showsHorizontalScrollIndicator={false} onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}>
+      <View style={{ flex: 1, alignItems: 'flex-end' }} onLayout={(e) => setRoom(e.nativeEvent.layout.width)}>
+      <ScrollView
+        ref={scroll}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ width: Math.max(0, columns * (CELL + GAP) - GAP), flexGrow: 0 }}
+        onLayout={() => scroll.current?.scrollToEnd({ animated: false })}
+        onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}
+      >
         <View style={{ flexDirection: 'row', gap: GAP }}>
           {weeks.map((week) => {
             // Label the column in which a month starts.
@@ -274,6 +320,7 @@ export function Heatmap({ weeks, cell, label }: { weeks: DayKey[][]; cell: (day:
           })}
         </View>
       </ScrollView>
+      </View>
     </View>
   );
 }

@@ -21,16 +21,20 @@ function useNow(active: boolean): number {
   return now;
 }
 
-/** Each character sits in a fixed-width box so the clock does not jitter as digits change. */
+/** Tabular figures (the font has them) keep the clock from jittering as digits change. */
 function Clock({ ms, color }: { ms: number; color: string }) {
   const text = formatClock(ms);
   const [min, sec] = text.split(':');
   return (
-    <View accessible accessibilityRole="timer" accessibilityLabel={`${+min} minutes ${+sec} seconds left`} style={{ flexDirection: 'row', justifyContent: 'center' }}>
-      {text.split('').map((c, i) => (
-        <Text key={i} style={{ width: c === ':' ? 28 : 56, textAlign: 'center', fontFamily: fonts.display, fontSize: 92, lineHeight: 100, color }}>{c}</Text>
-      ))}
-    </View>
+    <Text
+      accessibilityRole="timer"
+      accessibilityLabel={`${+min} minutes ${+sec} seconds left`}
+      numberOfLines={1}
+      adjustsFontSizeToFit
+      style={{ textAlign: 'center', fontFamily: fonts.display, fontSize: 92, lineHeight: 100, fontVariant: ['tabular-nums'], color }}
+    >
+      {text}
+    </Text>
   );
 }
 
