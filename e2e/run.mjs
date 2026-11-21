@@ -186,6 +186,24 @@ try {
   await seen(text('2 of 4 done today'));
   assert.equal(await text('Archived').count(), 0);
 
+  stage('reorder habits: the new order shows on Today and survives a reload');
+  const firstHabit = () => page.getByRole('checkbox', { name: /, done today$/ }).first().getAttribute('aria-label');
+  assert.equal(await firstHabit(), 'Read 20 pages, done today');
+  await button('Reorder').click();
+  assert.equal(await button('Move Read 20 pages up').isDisabled(), true);
+  for (let i = 0; i < 4; i++) await button('Move No phone after 22:00 up').click();
+  assert.equal(await button('Move No phone after 22:00 up').isDisabled(), true);
+  await shot('reorder');
+  await button('Done').click();
+  assert.equal(await firstHabit(), 'No phone after 22:00, done today');
+  await page.reload();
+  await seen(text('2 of 4 done today'));
+  assert.equal(await firstHabit(), 'No phone after 22:00, done today');
+  await button('Reorder').click();
+  for (let i = 0; i < 4; i++) await button('Move No phone after 22:00 down').click();
+  await button('Done').click();
+  assert.equal(await firstHabit(), 'Read 20 pages, done today');
+
   stage('small phone (320 wide), longest allowed name: no control runs off the screen');
   const LONG = 'Read twenty pages of the book club novel'; // 40 characters, the limit
   await page.setViewportSize({ width: 320, height: 640 });

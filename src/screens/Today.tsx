@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { View } from 'react-native';
 
 import { tap } from '../haptics';
@@ -14,6 +15,7 @@ const LINE_DAYS = 14;
 export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: () => void }) {
   const { data, dispatch, today } = useStore();
   const t = useTheme();
+  const [ordering, setOrdering] = useState(false);
   const lineDays = eachDay(addDays(today, 1 - LINE_DAYS), today);
 
   const archived = data.habits.filter((h) => archivedBy(h, today));
@@ -29,6 +31,18 @@ export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: 
     tap(data.settings.haptics);
     dispatch({ type: 'checkin/toggle', habitId: habit.id, day: today });
   };
+
+  const moveButton = (habit: Habit, by: -1 | 1, disabled: boolean) => (
+    <Tap
+      onPress={() => dispatch({ type: 'habit/move', id: habit.id, by })}
+      disabled={disabled}
+      aria-disabled={disabled}
+      accessibilityLabel={`Move ${habit.name} ${by < 0 ? 'up' : 'down'}`}
+      style={{ width: 44, height: 44, borderRadius: 12, borderWidth: 1.5, borderColor: t.edge, alignItems: 'center', justifyContent: 'center' }}
+    >
+      <Txt aria-hidden style={{ fontSize: 20, lineHeight: 24 }}>{by < 0 ? '\u2191' : '\u2193'}</Txt>
+    </Tap>
+  );
 
   const renderRow = ({ habit, statuses, streak: s }: (typeof rows)[number]) => {
     const color = t.habit[habit.color];
@@ -79,6 +93,27 @@ export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: 
           <Txt muted>Add one thing you want to do regularly. You check it in with one tap, and the line shows how long you have kept it going.</Txt>
           <Button label="Add a habit" onPress={onAdd} />
         </View>
+      ) : ordering ? (
+        <View style={{ gap: 12 }}>
+          <View style={{ gap: 4 }}>
+            <Txt variant="heading" accessibilityRole="header" aria-level={2}>Order of habits</Txt>
+            <Txt variant="small" muted>Today lists habits in this order, due ones first.</Txt>
+          </View>
+          <View>
+            {rows.map(({ habit }, i) => (
+              <View key={habit.id}>
+                {i > 0 && <Rule />}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 }}>
+                  <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: t.habit[habit.color] }} />
+                  <Txt numberOfLines={2} style={{ flex: 1 }}>{habit.name}</Txt>
+                  {moveButton(habit, -1, i === 0)}
+                  {moveButton(habit, 1, i === rows.length - 1)}
+                </View>
+              </View>
+            ))}
+          </View>
+          <Button label="Done" onPress={() => setOrdering(false)} />
+        </View>
       ) : (
         <>
           {dueRows.length > 0 && (
@@ -114,7 +149,10 @@ export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: 
             </View>
           )}
 
-          <Button kind="outline" label="Add a habit" onPress={onAdd} />
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Button kind="outline" label="Add a habit" onPress={onAdd} style={{ flex: 1 }} />
+            {rows.length > 1 && <Button kind="outline" label="Reorder" onPress={() => setOrdering(true)} style={{ flex: 1 }} />}
+          </View>
 
           <View style={{ gap: 8 }}>
             <Txt variant="small" muted>Each line is the last {LINE_DAYS} days. A ring at the end means today is still open.</Txt>
@@ -123,7 +161,7 @@ export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: 
         </>
       )}
 
-      {archived.length > 0 && (
+      {archived.length > 0 && !ordering && (
         <View>
           <Txt variant="heading" muted accessibilityRole="header" aria-level={2}>Archived</Txt>
           {archived.map((habit, i) => (
