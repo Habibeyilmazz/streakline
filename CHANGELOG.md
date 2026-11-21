@@ -5,6 +5,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Security pass (round 11)
+
+Reviewed by hand again: the security-review skill could not run (it needs the session's working directory to be a git repository, and this agent's is not). Trust boundaries are unchanged since round 3: an imported backup file, the app's own storage, and on the web another tab's storage event, all through `validateData` / `validateTimer`.
+
+- Fixed: `streak()` found a habit's first day with `Math.min(createdOn, ...checkIns)`. A valid backup can hold about 84,000 check-in days per habit (every day from 1970 to 2199). Spreading that many arguments overflowed a 200 KB stack (`node --stack-size=200`: `RangeError`), so the app could crash on a phone, whose JS stack is smaller than Node's, after importing such a file, and keep crashing because the data was saved. It is now a loop. Regression tests for daily and weekly streaks over the full range; they fail on the old code under the small stack. Not checked on a real phone or on Hermes itself.
+- Added: `npm run test:small-stack` (the unit tests on a 200 KB stack), also run in CI.
+- Checked, no change: `npm audit` 0 vulnerabilities; git history has no secrets and only the noreply identity; CI keeps `contents: read`, SHA-pinned actions and no stored checkout token; the validator still refuses prototype keys and impossible dates; no `eval`, `innerHTML`, `Linking` or network calls; habit names are the only data in notifications.
+- Left alone, as in round 3: `e2e/serve.mjs` (test-only, 127.0.0.1) stops on a malformed `%` escape; Android `allowBackup` stays on.
+- Still true: never run on a phone; no demo GIF; no drag and drop; Lighthouse not run.
+
 ### Design pass (round 10)
 
 Looked at every tab of the web build in light and dark at 390 and 1280 px, with the synthetic fixture and with no data, plus the habit sheet, the editor and the keyboard focus ring (`node e2e/tour.mjs <dir> [empty]` reproduces the tab screenshots). The screens already held up from round 2: consistent type scale, eyebrow over every title, empty states with one clear action, a visible focus ring in both themes, the sheet's slide turned off under reduced motion, tabular digits on the timer. No restyling was done, so the README screenshots are unchanged (the e2e `--screenshots` run rewrote them byte for byte).
