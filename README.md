@@ -15,6 +15,9 @@ Everything stays on your phone: no account, no server, no tracking.
   <img src="docs/screenshots/reflect.png" width="250" alt="Evening reflection with three prompts">
   <img src="docs/screenshots/today-dark.png" width="250" alt="Today in the dark theme">
 </p>
+<p>
+  <img src="docs/screenshots/archived-detail.png" width="250" alt="An archived habit: its streak when archived, best streak and year heatmap stay, with a Restore button">
+</p>
 
 The screenshots are taken from the running app (its web build, at 390x844) by the end-to-end test, using synthetic data.
 
@@ -46,6 +49,7 @@ No phone at hand? `npm run web` opens the same app in a browser at http://localh
 - **Evening reflection**: three prompts, about two minutes.
 - **Weekly review** with plain counts: kept, missed, still open, frozen, focus minutes, reflections, and the week before for comparison.
 - **Local notifications**: a reminder time per habit, one for the reflection, and one when the timer ends.
+- **Archive** a habit you have stopped (or put on hold): it leaves Today, reminders, the focus timer and the weekly review from that day on, and its history, streaks and heatmap stay. Archived habits are listed at the bottom of Today; open one to restore it. Deleting is still there for habits you want gone with their history.
 - **Backup**: export everything as one JSON file, import it on another device. Imports are validated and ask before replacing anything.
 - Light and dark theme, haptics, screen-reader labels throughout.
 
@@ -80,7 +84,9 @@ e2e/                   Playwright script that drives the web build
 
 **Storage.** All data is one JSON document in AsyncStorage (on the web build: the browser's local storage). It is validated on every load. If it fails validation, the app shows a recovery screen that lets you save a copy of the raw data before you choose to start empty; it never overwrites it silently.
 
-**Backup format.** `{ "app": "streakline", "version": 1, "exportedAt": "...", "data": { habits, checkins, freezes, sessions, reflections, settings } }`. Importing replaces what is on the device, after showing what is in the file and asking.
+**Archiving.** An archived habit stores the day it was archived (`archivedOn`). From that day on it counts as not existing yet: never due, never missed, not in the review or the all-habits heatmap; its streak is the one it had when archived. Restoring removes the date, so the history is read again as if it had never been archived.
+
+**Backup format.** `{ "app": "streakline", "version": 1, "exportedAt": "...", "data": { habits, checkins, freezes, sessions, reflections, settings } }`. A habit may carry `archivedOn`; backups from before archiving existed load unchanged. Importing replaces what is on the device, after showing what is in the file and asking.
 
 ## Development
 
@@ -99,7 +105,7 @@ CI runs all of the above, `expo-doctor`, and a production JavaScript bundle for 
 
 ## What has and has not been verified
 
-Verified by running it: the logic (190 unit tests, in five time zones), the calls made to the notification API (7 tests against a mocked `expo-notifications`, not a phone), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, dark theme, delete, midnight rollover, damaged-data recovery), that the app bundles for iOS and Android, and that `npx expo start` in a fresh clone serves the Expo Go manifest and the iOS bundle.
+Verified by running it: the logic and theme (218 unit tests, in five time zones), the calls made to the notification API (7 tests against a mocked `expo-notifications`, not a phone), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, archive and restore, dark theme, delete, midnight rollover, damaged-data recovery), that the app bundles for iOS and Android, and that `npx expo start` in a fresh clone serves the Expo Go manifest and the iOS bundle.
 
 Not verified: the app has **not yet been run on a physical phone or a simulator**. The parts that only exist on a phone (notifications, haptics, the share sheet for export, the native file picker for import, safe areas and keyboard behaviour) are written against the documented Expo SDK 58 APIs but are untested on a device. Please open an issue if something misbehaves.
 
@@ -109,14 +115,13 @@ Not verified: the app has **not yet been run on a physical phone or a simulator*
 - On Android the timer-end notification is scheduled without the exact-alarm permission, so the system may deliver it a little late.
 - Changing a habit's schedule re-reads its whole history under the new schedule.
 - Weeks start on Monday.
-- Deleting a habit deletes its check-ins. There is no archive yet.
+- Restoring an archived habit counts the days it spent archived as missed; there is no pause that excuses a stretch of days.
 - Import replaces all data; it does not merge.
 - Reminder times are typed (`7:30` or `07:30`, 24-hour); there is no time picker.
 
 ## Roadmap
 
 - Run and fix on real iOS and Android devices; development build instructions.
-- Archive a habit instead of deleting it.
 - Merge on import.
 - A time picker for reminders, and reminders that stay quiet once the habit is done.
 - Configurable first day of the week.

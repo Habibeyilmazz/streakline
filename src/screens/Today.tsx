@@ -1,9 +1,9 @@
 import { View } from 'react-native';
 
 import { tap } from '../haptics';
-import { addDays, dayMonthLong, eachDay, weekdayLong } from '../logic/dates';
+import { addDays, dayMonthLong, dayMonthShort, eachDay, weekdayLong } from '../logic/dates';
 import { weekCount } from '../logic/stats';
-import { dayStatus, describeSchedule, marksOf, streak, todayState } from '../logic/streaks';
+import { archivedBy, dayStatus, describeSchedule, marksOf, streak, todayState } from '../logic/streaks';
 import type { Habit } from '../logic/types';
 import { useStore } from '../store';
 import { fonts, useTheme } from '../theme';
@@ -16,7 +16,8 @@ export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: 
   const t = useTheme();
   const lineDays = eachDay(addDays(today, 1 - LINE_DAYS), today);
 
-  const rows = data.habits.map((habit) => {
+  const archived = data.habits.filter((h) => archivedBy(h, today));
+  const rows = data.habits.filter((h) => !archivedBy(h, today)).map((habit) => {
     const marks = marksOf(data, habit.id);
     return { habit, statuses: lineDays.map((d) => dayStatus(habit, d, today, marks)), streak: streak(habit, marks, today), state: todayState(habit, today, marks) };
   });
@@ -120,6 +121,26 @@ export function Today({ onOpen, onAdd }: { onOpen: (id: string) => void; onAdd: 
             <StreakLineLegend />
           </View>
         </>
+      )}
+
+      {archived.length > 0 && (
+        <View>
+          <Txt variant="heading" muted accessibilityRole="header" aria-level={2}>Archived</Txt>
+          {archived.map((habit, i) => (
+            <View key={habit.id}>
+              {i > 0 && <Rule />}
+              <Tap
+                onPress={() => onOpen(habit.id)}
+                accessibilityLabel={`${habit.name}, archived ${dayMonthShort(habit.archivedOn!)}. Open details`}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 48, paddingVertical: 10 }}
+              >
+                <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: t.habit[habit.color] }} />
+                <Txt numberOfLines={1} style={{ flex: 1 }}>{habit.name}</Txt>
+                <Txt variant="small" muted>Since {dayMonthShort(habit.archivedOn!)}</Txt>
+              </Tap>
+            </View>
+          ))}
+        </View>
       )}
     </Page>
   );

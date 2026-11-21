@@ -163,6 +163,29 @@ try {
   await button('Save changes').click();
   await button('Close').click();
 
+  stage('archive hides a habit but keeps its history; restore brings it back');
+  await button(/Practice guitar.*Open details/).click();
+  await seen(page.getByLabel('Current streak: 2 days'));
+  await button('Archive habit').click();
+  await seen(page.getByLabel('Streak when archived: 2 days'));
+  await seen(page.getByRole('img', { name: /Past year of Practice guitar: \d+ days done/ }));
+  assert.equal(await page.getByRole('checkbox', { name: /^Fri 20 Nov/ }).count(), 0); // no backfill while archived
+  await button('Close').click();
+  await seen(text('1 of 3 done today'));
+  await seen(button('Practice guitar, archived 21 Nov. Open details'));
+  await tab('Focus').click();
+  await seen(page.getByRole('radio', { name: 'Read 20 pages' }));
+  assert.equal(await page.getByRole('radio', { name: 'Practice guitar' }).count(), 0);
+  await page.reload();
+  await seen(text('1 of 3 done today'));
+  await button(/Practice guitar, archived/).click();
+  await shot('archived-detail');
+  await button('Restore habit').click();
+  await seen(page.getByLabel('Current streak: 2 days'));
+  await button('Close').click();
+  await seen(text('2 of 4 done today'));
+  assert.equal(await text('Archived').count(), 0);
+
   stage('small phone (320 wide), longest allowed name: no control runs off the screen');
   const LONG = 'Read twenty pages of the book club novel'; // 40 characters, the limit
   await page.setViewportSize({ width: 320, height: 640 });

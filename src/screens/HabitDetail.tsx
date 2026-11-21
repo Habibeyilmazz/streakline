@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { tap } from '../haptics';
 import { addDays, dayMonthShort, eachDay, monthShort, WEEKDAYS_SHORT, weekday } from '../logic/dates';
 import { yearGrid } from '../logic/stats';
-import { FREEZES_PER_MONTH, dayStatus, describeSchedule, freezeBlocker, marksOf, streak } from '../logic/streaks';
+import { FREEZES_PER_MONTH, archivedBy, dayStatus, describeSchedule, freezeBlocker, marksOf, streak } from '../logic/streaks';
 import type { Habit } from '../logic/types';
 import { useStore } from '../store';
 import { fonts, useTheme } from '../theme';
@@ -31,6 +31,7 @@ export function HabitDetail({ habit, onEdit }: { habit: Habit; onEdit: () => voi
   const unit = (n: number) => `${n} ${s.unit}${n === 1 ? '' : 's'}`;
   const focusMinutes = data.sessions.filter((x) => x.habitId === habit.id).reduce((n, x) => n + x.minutes, 0);
   const yesterday = addDays(today, -1);
+  const archived = archivedBy(habit, today);
   const usedThisMonth = [...marks.frozen].filter((d) => d.startsWith(today.slice(0, 7))).length;
 
   const freezeRow = (day: string, name: string) => {
@@ -60,7 +61,7 @@ export function HabitDetail({ habit, onEdit }: { habit: Habit; onEdit: () => voi
       </View>
 
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', rowGap: 16, columnGap: 12 }}>
-        <Stat value={unit(s.current)} label="Current streak" />
+        <Stat value={unit(s.current)} label={archived ? 'Streak when archived' : 'Current streak'} />
         <Stat value={unit(s.best)} label="Best streak" />
         <Stat value={String(marks.done.size)} label="Check-ins in total" />
         <Stat value={formatMinutes(focusMinutes)} label="Focus time" />
@@ -82,44 +83,61 @@ export function HabitDetail({ habit, onEdit }: { habit: Habit; onEdit: () => voi
         </View>
       </Section>
 
-      <Section title="Last 7 days">
-        <Txt variant="small" muted>Forgot to check in? Tap a day to fix it.</Txt>
-        <View style={{ flexDirection: 'row', gap: 6 }}>
-          {eachDay(addDays(today, -6), today).map((day) => {
-            const status = dayStatus(habit, day, today, marks);
-            const done = status === 'done';
-            return (
-              <Tap
-                key={day}
-                onPress={() => {
-                  tap(data.settings.haptics);
-                  dispatch({ type: 'checkin/toggle', habitId: habit.id, day });
-                }}
-                accessibilityRole="checkbox"
-                aria-checked={done}
-                accessibilityLabel={`${WEEKDAYS_SHORT[weekday(day)]} ${dayMonthShort(day)}, ${statusWord(status)}`}
-                style={{ flex: 1, alignItems: 'center', gap: 6, paddingVertical: 4 }}
-              >
-                <Txt variant="small" muted>{WEEKDAYS_SHORT[weekday(day)][0]}</Txt>
-                <View style={[{ width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }, cellStyle(t, status, color)]}>
-                  {done && <CheckMark size={20} color={t.bg} />}
-                </View>
-                <Txt variant="small" muted>{+day.slice(8)}</Txt>
-              </Tap>
-            );
-          })}
-        </View>
-      </Section>
+      {archived ? (
+        <Section title="Archived">
+          <Txt variant="small" muted>
+            Since {dayMonthShort(habit.archivedOn!)} this habit is not on Today, in reminders, the focus timer or the weekly review. Its history stays. If you restore it, the days it spent archived count as missed.
+          </Txt>
+          <Button label="Restore habit" onPress={() => dispatch({ type: 'habit/restore', id: habit.id })} />
+        </Section>
+      ) : (
+        <>
+          <Section title="Last 7 days">
+            <Txt variant="small" muted>Forgot to check in? Tap a day to fix it.</Txt>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {eachDay(addDays(today, -6), today).map((day) => {
+                const status = dayStatus(habit, day, today, marks);
+                const done = status === 'done';
+                return (
+                  <Tap
+                    key={day}
+                    onPress={() => {
+                      tap(data.settings.haptics);
+                      dispatch({ type: 'checkin/toggle', habitId: habit.id, day });
+                    }}
+                    accessibilityRole="checkbox"
+                    aria-checked={done}
+                    accessibilityLabel={`${WEEKDAYS_SHORT[weekday(day)]} ${dayMonthShort(day)}, ${statusWord(status)}`}
+                    style={{ flex: 1, alignItems: 'center', gap: 6, paddingVertical: 4 }}
+                  >
+                    <Txt variant="small" muted>{WEEKDAYS_SHORT[weekday(day)][0]}</Txt>
+                    <View style={[{ width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' }, cellStyle(t, status, color)]}>
+                      {done && <CheckMark size={20} color={t.bg} />}
+                    </View>
+                    <Txt variant="small" muted>{+day.slice(8)}</Txt>
+                  </Tap>
+                );
+              })}
+            </View>
+          </Section>
 
-      <Section title="Freeze a day">
-        <Txt variant="small" muted>
-          A freeze excuses a day you cannot do, so it does not break the streak. It is never counted as done. You get {FREEZES_PER_MONTH} per habit each month; {usedThisMonth} used in {monthShort(today)}.
-        </Txt>
-        {freezeRow(today, 'today')}
-        {freezeRow(yesterday, 'yesterday')}
-      </Section>
+          <Section title="Freeze a day">
+            <Txt variant="small" muted>
+              A freeze excuses a day you cannot do, so it does not break the streak. It is never counted as done. You get {FREEZES_PER_MONTH} per habit each month; {usedThisMonth} used in {monthShort(today)}.
+            </Txt>
+            {freezeRow(today, 'today')}
+            {freezeRow(yesterday, 'yesterday')}
+          </Section>
+        </>
+      )}
 
       <Button label="Edit habit" kind="outline" onPress={onEdit} />
+      {!archived && (
+        <View style={{ gap: 4 }}>
+          <Button label="Archive habit" kind="outline" onPress={() => dispatch({ type: 'habit/archive', id: habit.id, day: today })} />
+          <Txt variant="small" muted>Stop tracking it from today and keep its history. You can restore it later.</Txt>
+        </View>
+      )}
     </Page>
   );
 }

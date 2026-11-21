@@ -46,7 +46,7 @@ export function HabitEditor({ habit, onDone }: { habit?: Habit; onDone: (deleted
     const schedule: Schedule = kind === 'daily' ? { kind } : kind === 'weekly' ? { kind, times } : { kind, days: [...days].sort() };
     dispatch({
       type: 'habit/save',
-      habit: { id: habit?.id ?? newId(), name: trimmed, color, schedule, createdOn: habit?.createdOn ?? today, reminder: normalizeTime(reminder) },
+      habit: { id: habit?.id ?? newId(), name: trimmed, color, schedule, createdOn: habit?.createdOn ?? today, reminder: normalizeTime(reminder), ...(habit?.archivedOn && { archivedOn: habit.archivedOn }) },
     });
     onDone();
   };
@@ -143,7 +143,7 @@ export function HabitEditor({ habit, onDone }: { habit?: Habit; onDone: (deleted
                 onDone(true);
               }}
             />
-            <Txt variant="small" muted>Deleting removes this habit's check-ins and freezes. Focus time already logged stays in your totals.</Txt>
+            <Txt variant="small" muted>Deleting removes this habit's check-ins and freezes. Focus time already logged stays in your totals. To stop tracking it but keep its history, archive it from its details instead.</Txt>
           </>
         )}
       </View>

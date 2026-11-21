@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { tap } from '../haptics';
+import { archivedBy } from '../logic/streaks';
 import { formatClock, remainingMs } from '../logic/timer';
 import { useStore } from '../store';
 import { fonts, useTheme } from '../theme';
@@ -46,6 +47,7 @@ export function Focus() {
   const now = useNow(running);
   const { focusMinutes, breakMinutes, haptics } = data.settings;
 
+  const habits = data.habits.filter((h) => !archivedBy(h, today));
   const nameOf = (id: string | null) => data.habits.find((h) => h.id === id)?.name ?? null;
   const todaySessions = data.sessions.filter((s) => s.day === today);
   const todayMinutes = todaySessions.reduce((n, s) => n + s.minutes, 0);
@@ -89,11 +91,11 @@ export function Focus() {
           <Txt variant="display" accessibilityRole="header">One thing, {focusMinutes} minutes</Txt>
         </View>
 
-        {data.habits.length > 0 && (
+        {habits.length > 0 && (
           <Section title="For which habit?">
             <ChipRow label="Habit">
               <Chip label="No habit" selected={habitId === null} onPress={() => setHabitId(null)} />
-              {data.habits.map((h) => (
+              {habits.map((h) => (
                 <Chip key={h.id} label={h.name} selected={habitId === h.id} color={t.habit[h.color]} onPress={() => setHabitId(h.id)} />
               ))}
             </ChipRow>
