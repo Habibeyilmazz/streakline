@@ -1,5 +1,5 @@
-import { DayKey, dayKey } from './dates';
-import { archivedBy, freezeBlocker, marksOf } from './streaks';
+import { DayKey, addDays, dayKey } from './dates';
+import { archivedBy, freezeBlocker, marksOf, mergePauses } from './streaks';
 import { Timer, isFinished, pauseTimer, resumeTimer, startTimer } from './timer';
 import { Data, Habit, MAX_ANSWER_LENGTH, MAX_HABITS, MAX_SESSIONS, Settings } from './types';
 
@@ -11,7 +11,8 @@ export type Action =
   | { type: 'habit/delete'; id: string }
   /** Hide the habit from `day` on, keeping its history. */
   | { type: 'habit/archive'; id: string; day: DayKey }
-  | { type: 'habit/restore'; id: string }
+  /** Track it again from `day`; the days it was archived become a pause. */
+  | { type: 'habit/restore'; id: string; day: DayKey }
   /** Swap the habit with the next active (not archived) habit above (-1) or below (1) it. */
   | { type: 'habit/move'; id: string; by: -1 | 1 }
   | { type: 'checkin/toggle'; habitId: string; day: DayKey }
@@ -67,8 +68,14 @@ export function reducer(state: State, action: Action): State {
     case 'habit/restore': {
       const habit = data.habits.find((h) => h.id === action.id);
       if (!habit) return state;
-      const { archivedOn: _, ...active } = habit;
-      const next = action.type === 'habit/archive' ? { ...active, archivedOn: action.day } : active;
+      const { archivedOn, ...active } = habit;
+      const last = addDays(action.day, -1);
+      const next =
+        action.type === 'habit/archive'
+          ? { ...active, archivedOn: action.day }
+          : archivedOn !== undefined && archivedOn <= last
+            ? { ...active, pauses: mergePauses([...(habit.pauses ?? []), { from: archivedOn, to: last }]) }
+            : active;
       return withData({ habits: data.habits.map((h) => (h === habit ? next : h)) });
     }
 

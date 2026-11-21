@@ -72,6 +72,11 @@ describe('rejects malformed habits', () => {
     [{ reminder: 730 }, 'time like'],
     [{ archivedOn: '2026-13-01' }, 'archive date'],
     [{ archivedOn: false }, 'archive date'],
+    [{ pauses: {} }, 'list of at most'],
+    [{ pauses: Array(1001).fill({ from: '2026-11-01', to: '2026-11-02' }) }, 'list of at most'],
+    [{ pauses: [{ from: '2026-11-01' }] }, 'pause end'],
+    [{ pauses: ['2026-11-01'] }, 'pause start'],
+    [{ pauses: [{ from: '2026-11-05', to: '2026-11-01' }] }, 'ends before it starts'],
     [{ id: '' }, 'valid id'],
     [{ id: '__proto__' }, 'valid id'],
     [{ id: 'constructor' }, 'valid id'],
@@ -133,6 +138,13 @@ describe('normalises what it accepts', () => {
     expect(parseBackup(exportBackup(archived, new Date()))).toEqual({ ok: true, data: validateData(archived) });
     expect(validateData(archived).habits[0].archivedOn).toBe('2026-11-20');
     expect(validateData({ habits: [{ ...sample.habits[0], archivedOn: null }] }).habits[0]).toEqual(sample.habits[0]);
+  });
+
+  test('pauses are sorted and overlapping ones joined; null or missing means none', () => {
+    const paused = { ...sample, habits: [{ ...sample.habits[0], pauses: [{ from: '2026-11-10', to: '2026-11-12' }, { from: '2026-11-01', to: '2026-11-03' }, { from: '2026-11-04', to: '2026-11-05' }, { from: '2026-11-11', to: '2026-11-11' }] }] };
+    expect(validateData(paused).habits[0].pauses).toEqual([{ from: '2026-11-01', to: '2026-11-05' }, { from: '2026-11-10', to: '2026-11-12' }]);
+    expect(parseBackup(exportBackup(validateData(paused), new Date()))).toEqual({ ok: true, data: validateData(paused) });
+    expect(validateData({ habits: [{ ...sample.habits[0], pauses: null }] }).habits[0]).toEqual(sample.habits[0]);
   });
 
   test('does not pollute Object.prototype', () => {

@@ -46,7 +46,8 @@ export function HabitEditor({ habit, onDone }: { habit?: Habit; onDone: (deleted
     const schedule: Schedule = kind === 'daily' ? { kind } : kind === 'weekly' ? { kind, times } : { kind, days: [...days].sort() };
     dispatch({
       type: 'habit/save',
-      habit: { id: habit?.id ?? newId(), name: trimmed, color, schedule, createdOn: habit?.createdOn ?? today, reminder: normalizeTime(reminder), ...(habit?.archivedOn && { archivedOn: habit.archivedOn }) },
+      // Spread first so archivedOn and pauses survive an edit.
+      habit: { ...habit, id: habit?.id ?? newId(), name: trimmed, color, schedule, createdOn: habit?.createdOn ?? today, reminder: normalizeTime(reminder) },
     });
     onDone();
   };

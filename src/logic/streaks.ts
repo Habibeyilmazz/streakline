@@ -1,5 +1,5 @@
 import { DayKey, WEEKDAYS_SHORT, addDays, dayNumber, weekStart, weekday } from './dates';
-import type { Data, Habit, Schedule } from './types';
+import { Data, Habit, MAX_PAUSES, Pause, Schedule } from './types';
 
 /** The days a habit was checked in and the days it was frozen. */
 export type Marks = { done: ReadonlySet<DayKey>; frozen: ReadonlySet<DayKey> };
@@ -30,17 +30,31 @@ export type DayStatus =
   | 'open'
   /** Not expected that day. */
   | 'rest'
-  /** Before the habit existed, after it was archived, or in the future. */
+  /** Before the habit existed, while it was archived (or paused), or in the future. */
   | 'none';
 
 /** Is the habit archived as of this day? */
 export const archivedBy = (habit: Habit, day: DayKey): boolean => habit.archivedOn !== undefined && day >= habit.archivedOn;
 
+/** Was the habit archived on this day and restored later? Such a day is excused, like a freeze. */
+export const pausedOn = (habit: Habit, day: DayKey): boolean => !!habit.pauses?.some((p) => day >= p.from && day <= p.to);
+
+/** Sorts pauses and joins those that overlap or touch; keeps the newest MAX_PAUSES. */
+export function mergePauses(pauses: readonly Pause[]): Pause[] {
+  const out: Pause[] = [];
+  for (const p of [...pauses].sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0))) {
+    const last = out[out.length - 1];
+    if (last && p.from <= addDays(last.to, 1)) out[out.length - 1] = { from: last.from, to: p.to > last.to ? p.to : last.to };
+    else out.push({ from: p.from, to: p.to });
+  }
+  return out.slice(-MAX_PAUSES);
+}
+
 export function dayStatus(habit: Habit, day: DayKey, today: DayKey, marks: Marks): DayStatus {
   // A check-in dated after today (made before travelling west) waits until that day arrives.
   if (day > today) return 'none';
   if (marks.done.has(day)) return 'done';
-  if (day < habit.createdOn || archivedBy(habit, day)) return 'none';
+  if (day < habit.createdOn || archivedBy(habit, day) || pausedOn(habit, day)) return 'none';
   if (marks.frozen.has(day)) return 'frozen';
   if (!isDue(habit.schedule, day)) return 'rest';
   if (day === today) return 'open';
@@ -75,10 +89,16 @@ export type Streak = { current: number; best: number; unit: 'day' | 'week' };
  * Monday-to-Sunday weeks that reached N (a frozen day counts towards N).
  * The current week counts once it reaches N and never breaks the streak early.
  * A habit's first week only asks for as many days as were left in it.
+ *
+ * Paused days (archived, then restored) bridge the run like frozen days; a
+ * partly paused week asks only for the days that were not paused.
  */
 export function streak(habit: Habit, marks: Marks, today: DayKey): Streak {
   const done = new Set([...marks.done].map(dayNumber));
   const frozen = new Set([...marks.frozen].map(dayNumber));
+  // Bounded: the validator keeps pauses apart and within 1970..2199.
+  const paused = new Set<number>();
+  for (const p of habit.pauses ?? []) for (let n = dayNumber(p.from); n <= dayNumber(p.to); n++) paused.add(n);
   // An archived habit's streak stops where it was archived.
   const end = dayNumber(archivedBy(habit, today) ? habit.archivedOn! : today);
   // Backfilled check-ins may predate the habit's creation day.
@@ -93,9 +113,14 @@ export function streak(habit: Habit, marks: Marks, today: DayKey): Streak {
     // Day 0 (1970-01-01) was a Thursday, so (n + 3) % 7 is days since Monday.
     for (let w = start - ((start + 3) % 7); w <= end; w += 7) {
       let kept = 0;
-      for (let n = w; n < w + 7 && n <= end; n++) if (done.has(n) || frozen.has(n)) kept++;
-      // The habit's first week may be too short to fit all N.
-      if (kept >= Math.min(s.times, w + 7 - start)) best = Math.max(best, ++run);
+      let open = 0; // days of this week the habit existed and was not paused
+      for (let n = w; n < w + 7; n++) {
+        if (n >= start && !paused.has(n)) open++;
+        if (n <= end && (done.has(n) || frozen.has(n))) kept++;
+      }
+      if (open === 0 && kept === 0) continue; // paused all week: neither kept nor broken
+      // The habit's first week, or a partly paused one, may be too short to fit all N.
+      if (kept >= Math.min(s.times, open)) best = Math.max(best, ++run);
       else if (w + 7 <= end) run = 0; // that week is over and fell short
     }
     return { current: run, best, unit: 'week' };
@@ -103,7 +128,7 @@ export function streak(habit: Habit, marks: Marks, today: DayKey): Streak {
 
   for (let n = start; n <= end; n++) {
     if (done.has(n)) best = Math.max(best, ++run);
-    else if (n < end && !frozen.has(n) && (s.kind === 'daily' || s.days.includes((n + 4) % 7))) run = 0;
+    else if (n < end && !frozen.has(n) && !paused.has(n) && (s.kind === 'daily' || s.days.includes((n + 4) % 7))) run = 0;
   }
   return { current: run, best, unit: 'day' };
 }
@@ -118,6 +143,7 @@ export function freezeBlocker(habit: Habit, day: DayKey, today: DayKey, marks: M
   if (day !== today && day !== addDays(today, -1)) return 'Only today or yesterday can be frozen.';
   if (day < habit.createdOn) return 'The habit did not exist yet.';
   if (archivedBy(habit, day)) return 'The habit is archived.';
+  if (pausedOn(habit, day)) return 'The habit was paused that day.';
   if (marks.done.has(day)) return 'That day is already checked in.';
   if (marks.frozen.has(day)) return 'That day is already frozen.';
   if (!isDue(habit.schedule, day)) return 'Nothing was due that day.';

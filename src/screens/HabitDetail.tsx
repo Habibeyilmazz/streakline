@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { tap } from '../haptics';
 import { addDays, dayMonthShort, eachDay, monthShort, WEEKDAYS_SHORT, weekday } from '../logic/dates';
 import { yearGrid } from '../logic/stats';
-import { FREEZES_PER_MONTH, archivedBy, dayStatus, describeSchedule, freezeBlocker, marksOf, streak } from '../logic/streaks';
+import { FREEZES_PER_MONTH, archivedBy, dayStatus, describeSchedule, freezeBlocker, marksOf, pausedOn, streak } from '../logic/streaks';
 import type { Habit } from '../logic/types';
 import { useStore } from '../store';
 import { fonts, useTheme } from '../theme';
@@ -86,9 +86,9 @@ export function HabitDetail({ habit, onEdit }: { habit: Habit; onEdit: () => voi
       {archived ? (
         <Section title="Archived">
           <Txt variant="small" muted>
-            Since {dayMonthShort(habit.archivedOn!)} this habit is not on Today, in reminders, the focus timer or the weekly review. Its history stays. If you restore it, the days it spent archived count as missed.
+            Since {dayMonthShort(habit.archivedOn!)} this habit is not on Today, in reminders, the focus timer or the weekly review. Its history stays. Restore it when you want to track it again: the days in between are excused, like a freeze, so its streak carries on.
           </Txt>
-          <Button label="Restore habit" onPress={() => dispatch({ type: 'habit/restore', id: habit.id })} />
+          <Button label="Restore habit" onPress={() => dispatch({ type: 'habit/restore', id: habit.id, day: today })} />
         </Section>
       ) : (
         <>
@@ -107,7 +107,7 @@ export function HabitDetail({ habit, onEdit }: { habit: Habit; onEdit: () => voi
                     }}
                     accessibilityRole="checkbox"
                     aria-checked={done}
-                    accessibilityLabel={`${WEEKDAYS_SHORT[weekday(day)]} ${dayMonthShort(day)}, ${statusWord(status)}`}
+                    accessibilityLabel={`${WEEKDAYS_SHORT[weekday(day)]} ${dayMonthShort(day)}, ${!done && pausedOn(habit, day) ? 'paused' : statusWord(status)}`}
                     style={{ flex: 1, alignItems: 'center', gap: 6, paddingVertical: 4 }}
                   >
                     <Txt variant="small" muted>{WEEKDAYS_SHORT[weekday(day)][0]}</Txt>
@@ -135,7 +135,7 @@ export function HabitDetail({ habit, onEdit }: { habit: Habit; onEdit: () => voi
       {!archived && (
         <View style={{ gap: 4 }}>
           <Button label="Archive habit" kind="outline" onPress={() => dispatch({ type: 'habit/archive', id: habit.id, day: today })} />
-          <Txt variant="small" muted>Stop tracking it from today and keep its history. You can restore it later.</Txt>
+          <Txt variant="small" muted>Stop tracking it from today and keep its history. Away or ill for a while? Archive it now and restore it when you are back: the days in between are excused and its streak carries on.</Txt>
         </View>
       )}
     </Page>

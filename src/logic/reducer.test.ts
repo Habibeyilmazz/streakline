@@ -186,10 +186,10 @@ test('the reducer never mutates its input', () => {
 describe('archive and restore', () => {
   const archived = run([{ type: 'checkin/toggle', habitId: 'read', day: '2026-11-18' }, { type: 'habit/archive', id: 'read', day: '2026-11-20' }], base);
 
-  test('archiving keeps every record and stores the date; restoring removes only the date', () => {
+  test('archiving keeps every record and stores the date; restoring the same day removes only the date', () => {
     expect(archived.data.habits[0]).toEqual({ ...read, archivedOn: '2026-11-20' });
     expect(archived.data.checkins.read).toEqual(['2026-11-18']);
-    const restored = run([{ type: 'habit/restore', id: 'read' }], archived);
+    const restored = run([{ type: 'habit/restore', id: 'read', day: '2026-11-20' }], archived);
     expect(restored.data.habits[0]).toEqual(read);
     expect(restored.data.checkins.read).toEqual(['2026-11-18']);
     expect(() => validateData(JSON.parse(JSON.stringify(archived.data)))).not.toThrow();
@@ -198,7 +198,29 @@ describe('archive and restore', () => {
   test('archiving twice moves the date; unknown ids do nothing', () => {
     expect(run([{ type: 'habit/archive', id: 'read', day: '2026-11-25' }], archived).data.habits[0].archivedOn).toBe('2026-11-25');
     expect(run([{ type: 'habit/archive', id: 'ghost', day: '2026-11-25' }], archived)).toBe(archived);
-    expect(run([{ type: 'habit/restore', id: 'ghost' }], archived)).toBe(archived);
+    expect(run([{ type: 'habit/restore', id: 'ghost', day: '2026-11-25' }], archived)).toBe(archived);
+  });
+
+  test('restoring later turns the archived days into a pause, merged with earlier ones', () => {
+    const back = run([{ type: 'habit/restore', id: 'read', day: '2026-11-27' }], archived);
+    expect(back.data.habits[0]).toEqual({ ...read, pauses: [{ from: '2026-11-20', to: '2026-11-26' }] });
+    expect(validateData(JSON.parse(JSON.stringify(back.data)))).toEqual(back.data);
+    // A second stretch right after the first joins it; a later one is kept apart.
+    const twice = run([
+      { type: 'habit/archive', id: 'read', day: '2026-11-27' },
+      { type: 'habit/restore', id: 'read', day: '2026-11-29' },
+      { type: 'habit/archive', id: 'read', day: '2026-12-05' },
+      { type: 'habit/restore', id: 'read', day: '2026-12-06' },
+    ], back);
+    expect(twice.data.habits[0].pauses).toEqual([{ from: '2026-11-20', to: '2026-11-28' }, { from: '2026-12-05', to: '2026-12-05' }]);
+    // Restoring a habit that is not archived adds nothing.
+    expect(run([{ type: 'habit/restore', id: 'read', day: '2026-12-09' }], twice).data.habits[0].pauses).toEqual(twice.data.habits[0].pauses);
+  });
+
+  test('a paused day can still be checked in afterwards (backfill), but not frozen', () => {
+    const back = run([{ type: 'habit/restore', id: 'read', day: '2026-11-22' }], archived);
+    expect(run([{ type: 'checkin/toggle', habitId: 'read', day: '2026-11-21' }], back).data.checkins.read).toEqual(['2026-11-18', '2026-11-21']);
+    expect(run([{ type: 'freeze/toggle', habitId: 'read', day: '2026-11-21', today: '2026-11-22' }], back)).toBe(back);
   });
 
   test('no check-in can be added on or after the archive date, but earlier days can still change', () => {

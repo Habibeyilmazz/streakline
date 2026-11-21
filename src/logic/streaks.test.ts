@@ -303,7 +303,7 @@ describe('archived habits', () => {
     expect(streak(archived, marks(['2026-11-16', '2026-11-17']), TODAY).current).toBe(0);
   });
 
-  test('restoring (no archive date) reads the archived days as missed', () => {
+  test('a habit restored before pauses existed (no pause stored) reads the archived days as missed', () => {
     expect(streak(daily, marks(['2026-11-16', '2026-11-17', '2026-11-18']), TODAY).current).toBe(0);
   });
 
@@ -317,6 +317,45 @@ describe('archived habits', () => {
     const later = { ...daily, archivedOn: '2026-12-01' };
     expect(dayStatus(later, TODAY, TODAY, marks())).toBe('open');
     expect(streak(later, marks([TODAY]), TODAY).current).toBe(1);
+  });
+});
+
+describe('paused habits (archived, then restored)', () => {
+  // Paused Thursday 2026-11-12 to Tuesday 2026-11-17, tracked again from Wednesday.
+  const paused = { ...daily, pauses: [{ from: '2026-11-12', to: '2026-11-17' }] };
+
+  test('paused days are "none": not missed, not freezable, but a backfilled check-in shows as done', () => {
+    expect(dayStatus(paused, '2026-11-11', TODAY, marks())).toBe('missed');
+    expect(dayStatus(paused, '2026-11-12', TODAY, marks())).toBe('none');
+    expect(dayStatus(paused, '2026-11-17', TODAY, marks())).toBe('none');
+    expect(dayStatus(paused, '2026-11-18', TODAY, marks())).toBe('missed');
+    expect(dayStatus(paused, '2026-11-13', TODAY, marks(['2026-11-13']))).toBe('done');
+    expect(freezeBlocker(paused, '2026-11-17', '2026-11-18', marks())).toBe('The habit was paused that day.');
+  });
+
+  test('the streak bridges the pause without counting it', () => {
+    const m = marks([...eachDay('2026-11-09', '2026-11-11'), ...eachDay('2026-11-18', TODAY)]);
+    expect(streak(paused, m, TODAY)).toEqual({ current: 7, best: 7, unit: 'day' });
+    expect(streak(daily, m, TODAY).current).toBe(4); // without the pause, those days were missed
+    // A miss outside the pause still breaks it.
+    expect(streak(paused, marks([...eachDay('2026-11-09', '2026-11-11'), '2026-11-19', '2026-11-20']), TODAY).current).toBe(2);
+  });
+
+  test('weekdays: a pause over due days bridges too', () => {
+    const mwf = { ...habit({ kind: 'weekdays', days: [1, 3, 5] }), pauses: [{ from: '2026-11-09', to: '2026-11-15' }] };
+    expect(streak(mwf, marks(['2026-11-04', '2026-11-06', '2026-11-16', '2026-11-18', '2026-11-20']), TODAY).current).toBe(5);
+  });
+
+  test('N times a week: a fully paused week is skipped, a partly paused week asks only for the days left', () => {
+    const weekly = { ...habit({ kind: 'weekly', times: 3 }, '2026-10-26'), pauses: [{ from: '2026-11-02', to: '2026-11-12' }] };
+    // Week of 26 Oct: 3 kept. Week of 2 Nov: paused. Week of 9 Nov: Fri-Sun left, 2 kept is short of min(3, 3).
+    const short = marks(['2026-10-27', '2026-10-28', '2026-10-29', '2026-11-13', '2026-11-14']);
+    expect(streak(weekly, short, TODAY).current).toBe(0);
+    const kept = marks(['2026-10-27', '2026-10-28', '2026-10-29', '2026-11-13', '2026-11-14', '2026-11-15', '2026-11-16', '2026-11-17', '2026-11-18']);
+    expect(streak(weekly, kept, TODAY)).toEqual({ current: 3, best: 3, unit: 'week' });
+    // Paused from Wednesday to Sunday: only Monday and Tuesday were left, so 2 is enough.
+    const late = { ...habit({ kind: 'weekly', times: 3 }, '2026-11-09'), pauses: [{ from: '2026-11-11', to: '2026-11-15' }] };
+    expect(streak(late, marks(['2026-11-09', '2026-11-10']), TODAY).current).toBe(1);
   });
 });
 

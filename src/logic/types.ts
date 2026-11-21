@@ -18,7 +18,11 @@ export type Habit = {
   reminder: string | null;
   /** First day the habit is no longer tracked. Absent while it is active. Its history stays. */
   archivedOn?: DayKey;
+  /** Past stretches it was archived and then restored: excused, never missed. Sorted, no overlaps, inclusive. */
+  pauses?: Pause[];
 };
+
+export type Pause = { from: DayKey; to: DayKey };
 
 export type FocusSession = {
   id: string;
@@ -73,5 +77,7 @@ export const EMPTY_DATA: Data = {
 export const HABIT_COLOR_COUNT = 6;
 export const MAX_NAME_LENGTH = 40;
 export const MAX_HABITS = 200;
+/** Per habit. Bounds the per-day pause lookup; nobody archives and restores a habit 1000 times. */
+export const MAX_PAUSES = 1000;
 export const MAX_SESSIONS = 50_000;
 export const MAX_ANSWER_LENGTH = 1000;

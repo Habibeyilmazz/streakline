@@ -21,7 +21,7 @@ function randomAction(r: () => number, step: number): Action {
     }
     case 1: return { type: 'habit/delete', id };
     case 2: return { type: 'habit/archive', id, day };
-    case 3: return { type: 'habit/restore', id };
+    case 3: return { type: 'habit/restore', id, day };
     case 4: case 5: return { type: 'checkin/toggle', habitId: id, day };
     case 6: return { type: 'freeze/toggle', habitId: id, day, today: TODAY };
     case 7: return { type: 'reflection/save', day, answers: [pick(['', 'x', ' y ']), '', 'z'] };

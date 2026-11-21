@@ -1,5 +1,6 @@
 import { DayKey, isDayKey } from './dates';
 import { parseTime } from './reminders';
+import { mergePauses } from './streaks';
 import {
   DEFAULT_SETTINGS,
   Data,
@@ -9,7 +10,9 @@ import {
   MAX_ANSWER_LENGTH,
   MAX_HABITS,
   MAX_NAME_LENGTH,
+  MAX_PAUSES,
   MAX_SESSIONS,
+  Pause,
   Reflection,
   Schedule,
   Settings,
@@ -67,6 +70,17 @@ function schedule(v: unknown, what: string): Schedule {
   return fail(`${what} has an unknown schedule.`);
 }
 
+function pauses(v: unknown, what: string): Pause[] {
+  if (!Array.isArray(v) || v.length > MAX_PAUSES) return fail(`${what} must be a list of at most ${MAX_PAUSES} pauses.`);
+  return mergePauses(
+    v.map((p) => {
+      const from = day(isObject(p) ? p.from : undefined, `${what} start`);
+      const to = day(isObject(p) ? p.to : undefined, `${what} end`);
+      return from <= to ? { from, to } : fail(`${what} ends before it starts.`);
+    }),
+  );
+}
+
 function habit(v: unknown, i: number): Habit {
   const what = `Habit ${i + 1}`;
   if (!isObject(v)) return fail(`${what} is not an object.`);
@@ -81,6 +95,7 @@ function habit(v: unknown, i: number): Habit {
     reminder: time(v.reminder, `${what} reminder`),
     // Older backups have no such field; null is accepted as "active" too.
     ...(v.archivedOn != null && { archivedOn: day(v.archivedOn, `${what} archive date`) }),
+    ...(v.pauses != null && { pauses: pauses(v.pauses, `${what} pause`) }),
   };
 }
 

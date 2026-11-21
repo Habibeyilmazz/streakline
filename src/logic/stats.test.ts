@@ -145,6 +145,17 @@ describe('archived habits in the review', () => {
     expect(r).toMatchObject({ done: 1, due: 2, missed: 1 });
   });
 
+  test('a pause (archived, then restored) is left out of what was due', () => {
+    const read = { ...habit('read', { kind: 'daily' }), pauses: [{ from: '2026-11-09', to: '2026-11-18' }] }; // back on Thursday
+    const d = data([read], { read: ['2026-11-19', '2026-11-20'] });
+    const r = weekReview(d, MON, '2026-11-25');
+    expect(r.habits[0].days).toEqual(['none', 'none', 'none', 'done', 'done', 'missed', 'missed']);
+    expect(r).toMatchObject({ done: 2, due: 4, missed: 2 });
+    expect(weekReview(d, '2026-11-09', '2026-11-25').habits).toEqual([]); // paused all week
+    const run = { ...habit('run', { kind: 'weekly', times: 3 }), pauses: [{ from: '2026-11-16', to: '2026-11-20' }] }; // two days left
+    expect(weekReview(data([run], { run: ['2026-11-21'] }), MON, '2026-11-25')).toMatchObject({ done: 1, due: 2, missed: 1 });
+  });
+
   test('the all-habits heatmap does not count an archived habit after its archive date', () => {
     const read = { ...habit('read', { kind: 'daily' }), archivedOn: '2026-11-19' };
     const gym = habit('gym', { kind: 'daily' });
