@@ -2,8 +2,9 @@ import { addDays, dayKey, dayNumber, eachDay, isDayKey, rangeLabel, weekStart, w
 
 // `npm run test:zones` runs this file under several TZ values; every test
 // here must hold in all of them.
-const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-const inZone = (tz: string) => (zone === tz ? test : test.skip);
+// Compared with TZ itself, not Intl's resolved zone: ICU reports Asia/Kolkata as
+// "Asia/Calcutta", which silently skipped that zone's test.
+const inZone = (tz: string) => (process.env.TZ === tz ? test : test.skip);
 
 describe('dayKey', () => {
   test('is the local calendar date, right up to midnight', () => {
