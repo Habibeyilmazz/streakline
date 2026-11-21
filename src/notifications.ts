@@ -3,17 +3,14 @@ import { Platform } from 'react-native';
 
 import type { PlannedReminder } from './logic/reminders';
 
-/** Local notifications exist on iOS and Android only. */
-export const notificationsSupported = Platform.OS !== 'web';
+/** Local notifications exist on iOS and Android only; the web build loads notifications.web.ts instead. */
+export const notificationsSupported = true;
 
-if (notificationsSupported) {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
-  });
-}
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({ shouldShowBanner: true, shouldShowList: true, shouldPlaySound: true, shouldSetBadge: false }),
+});
 
 export async function notificationsAllowed(): Promise<boolean> {
-  if (!notificationsSupported) return false;
   return (await Notifications.getPermissionsAsync()).granted;
 }
 
@@ -30,10 +27,11 @@ async function apply(plan: PlannedReminder[], timerEnd: OneOff | null, ask: bool
   // The whole schedule is small, so replace it rather than track ids.
   await Notifications.cancelAllScheduledNotificationsAsync();
   if (plan.length === 0 && !timerEnd) return;
-  if (!(await ensurePermission(ask))) return;
+  // The channel comes first: per Expo's docs, Android 13+ does not show the permission prompt until one exists.
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('reminders', { name: 'Reminders', importance: Notifications.AndroidImportance.DEFAULT });
   }
+  if (!(await ensurePermission(ask))) return;
   const channelId = 'reminders';
   for (const { title, body, hour, minute, weekday } of plan) {
     await Notifications.scheduleNotificationAsync({
@@ -54,12 +52,21 @@ async function apply(plan: PlannedReminder[], timerEnd: OneOff | null, ask: bool
 }
 
 let queue: Promise<void> = Promise.resolve();
+const listeners = new Set<() => void>();
+
+/** Calls `f` after every sync, which is when the permission may have changed (the system prompt is answered during one). Returns an unsubscribe. */
+export function onNotificationsSynced(f: () => void): () => void {
+  listeners.add(f);
+  return () => void listeners.delete(f);
+}
 
 /**
  * Make the device's scheduled notifications match the plan. Calls run one at a
  * time. `ask` allows the system permission prompt; pass false for background refreshes.
  */
 export function syncNotifications(plan: PlannedReminder[], timerEnd: OneOff | null, ask: boolean): void {
-  if (!notificationsSupported) return;
-  queue = queue.then(() => apply(plan, timerEnd, ask)).catch((e) => console.warn('Could not schedule notifications', e));
+  queue = queue
+    .then(() => apply(plan, timerEnd, ask))
+    .catch((e) => console.warn('Could not schedule notifications', e))
+    .then(() => listeners.forEach((f) => f()));
 }

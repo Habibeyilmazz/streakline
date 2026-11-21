@@ -5,7 +5,7 @@ import { exportBackup, parseBackup } from '../logic/backup';
 import { parseTime } from '../logic/reminders';
 import { Data, EMPTY_DATA, Settings as SettingsType } from '../logic/types';
 import { pickTextFile, saveTextFile } from '../files';
-import { notificationsAllowed, notificationsSupported } from '../notifications';
+import { notificationsAllowed, notificationsSupported, onNotificationsSynced } from '../notifications';
 import { useStore } from '../store';
 import { useTheme } from '../theme';
 import { Button, Chip, ChipRow, ConfirmButton, Field, Page, Section, ToggleRow, Txt } from '../ui';
@@ -31,8 +31,11 @@ export function Settings({ version }: { version: string }) {
   const reminderError = reminder && !parseTime(reminder) ? 'Use 24-hour time, like 21:00.' : null;
   const [allowed, setAllowed] = useState(true);
   useEffect(() => {
-    notificationsAllowed().then(setAllowed, () => {});
-  }, [s.reflectionReminder]);
+    const check = () => void notificationsAllowed().then(setAllowed, () => {});
+    check();
+    // Checking only when a reminder is set would read the permission before the system prompt is answered.
+    return onNotificationsSynced(check);
+  }, []);
 
   const [pending, setPending] = useState<Data | null>(null);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
