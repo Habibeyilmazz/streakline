@@ -386,6 +386,29 @@ try {
     await ctx.close();
   }
 
+  stage('restore after days away: the archived days are a pause and the streak carries on');
+  {
+    // Its own context and clock, so days can pass without moving the main page's today.
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, timezoneId: 'UTC', locale: 'en-GB' });
+    await ctx.clock.install({ time: new Date(`${TODAY}T12:00:00Z`) });
+    await ctx.addInitScript((raw) => localStorage.getItem('streakline/data/v1') || localStorage.setItem('streakline/data/v1', raw), JSON.stringify(fixture(TODAY).data));
+    const p = await ctx.newPage();
+    p.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
+    await p.goto(`http://127.0.0.1:${PORT}/`);
+    await p.getByRole('button', { name: /Practice guitar.*Open details/ }).click();
+    await p.getByLabel('Current streak: 2 days').waitFor();
+    await p.getByRole('button', { name: 'Archive habit', exact: true }).click();
+    await ctx.clock.fastForward(3 * 86_400_000); // Saturday -> Tuesday
+    await p.reload();
+    await p.getByRole('button', { name: /Practice guitar, archived 21 Nov/ }).click();
+    await p.getByRole('button', { name: 'Restore habit', exact: true }).click();
+    await p.getByLabel('Current streak: 2 days').waitFor({ timeout: 5000 }); // without the pause: 0
+    const stored = await p.evaluate(() => JSON.parse(localStorage.getItem('streakline/data/v1')).habits.find((h) => h.id === 'guitar'));
+    assert.deepEqual(stored.pauses, [{ from: '2026-11-21', to: '2026-11-23' }]);
+    assert.equal(await p.getByRole('checkbox', { name: /^Sun 22 Nov/ }).getAttribute('aria-label'), 'Sun 22 Nov, paused');
+    await ctx.close();
+  }
+
   assert.deepEqual(problems, []);
   console.log('e2e passed');
 } catch (e) {
