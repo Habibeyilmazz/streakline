@@ -19,6 +19,7 @@ Everything stays on your phone: no account, no server, no tracking.
 <p>
   <img src="docs/screenshots/archived-detail.png" width="250" alt="An archived habit: its streak when archived, best streak and year heatmap stay, with a Restore button">
   <img src="docs/screenshots/reorder.png" width="250" alt="Reordering habits: each habit has move up and move down buttons">
+  <img src="docs/screenshots/paused-line.png" width="250" alt="Today after restoring a paused habit: Practice guitar's streak line shows a dotted stretch for the paused days, and the streak is kept">
 </p>
 
 The screenshots are taken from the running app (its web build, at 390x844) by the end-to-end test, using synthetic data.
@@ -120,7 +121,7 @@ CI runs all of the above, `expo-doctor`, and a production JavaScript bundle for 
 
 ## What has and has not been verified
 
-Verified by running it: the logic and theme (240 unit tests, in five time zones and on a small stack), the calls made to the notification API (7 tests against a mocked `expo-notifications`, not a phone), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, archive and restore, reorder, dark theme, delete, midnight rollover, damaged-data recovery, restoring a habit three days later keeps its streak), that the app bundles for iOS and Android, and that `npx expo start` in a fresh clone serves the Expo Go manifest and the iOS and Android bundles.
+Verified by running it: the logic and theme (247 unit tests (242 run on a plain `npm test`; the other 5 each need one time zone), in five time zones and on a small stack), the calls made to the notification API (7 tests against a mocked `expo-notifications`, not a phone), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, archive and restore, reorder, dark theme, delete, midnight rollover, damaged-data recovery, restoring a habit three days later keeps its streak), that the app bundles for iOS and Android, and that `npx expo start` in a fresh clone serves the Expo Go manifest and the iOS and Android bundles.
 
 Not verified: the app has **not yet been run on a physical phone or a simulator**. The parts that only exist on a phone (notifications, haptics, the share sheet for export, the native file picker for import, safe areas and keyboard behaviour) are written against the documented Expo SDK 58 APIs but are untested on a device. Please open an issue if something misbehaves.
 
@@ -130,7 +131,7 @@ Not verified: the app has **not yet been run on a physical phone or a simulator*
 - On Android the timer-end notification is scheduled without the exact-alarm permission, so the system may deliver it a little late.
 - Changing a habit's schedule re-reads its whole history under the new schedule.
 - Weeks start on Monday.
-- A pause starts when you archive and ends when you restore; there is no "pause until" date that restores the habit by itself. The 14-day streak line on Today shows paused days as a gap, although the streak number bridges them.
+- A pause starts when you archive and ends when you restore; there is no "pause until" date that restores the habit by itself. The 14-day streak line on Today draws them as a dotted stretch.
 - Import replaces all data; it does not merge.
 - Web build: a second tab picks up data and a focus timer saved in the first (the timer's countdown is kept per tab, but start, pause and stop carry over). When both tabs finish the same timer it is logged once. There is no sync between devices.
 - Reminder times are typed (`7:30` or `07:30`, 24-hour); there is no time picker.

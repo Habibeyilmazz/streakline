@@ -5,6 +5,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Launch pass (round 14)
+
+- Checked: tests (242 pass, 5 zone-only skipped), tsc, CI green, repo description and 11 topics, CONTRIBUTING.md and issue templates all present and accurate. The README already had the pitch, screenshots, quickstart, comparison, roadmap.
+- Added: `docs/screenshots/paused-line.png` (reported gap: paused-line visuals were never looked at). Taken by the e2e after restoring a habit three days later; the dotted stretch shows and the streak is kept. Shown in the README.
+- README: unit-test count corrected (247 incl. 5 zone-only); the known limit about the paused gap on the streak line removed (fixed in round 13).
+- Not done: a demo GIF (screenshots only); security-review skill still not run; never run on a phone or Hermes; no "pause until" date (a feature, left as a known limit).
+
 ### Reliability pass (round 13)
 
 - Fixed: the Today streak line drew paused days (archived, then restored) as a blank gap. `dayStatus` now returns `'paused'` for them (it used to return `'none'`); the line draws a dotted mark, the legend has a "Paused" entry and the spoken summary counts them. Existing tests that expected `'none'` for paused days were updated; the heatmaps and review treat `'paused'` as before (left out of counts).

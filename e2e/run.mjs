@@ -408,6 +408,10 @@ try {
     const stored = await p.evaluate(() => JSON.parse(localStorage.getItem('streakline/data/v1')).habits.find((h) => h.id === 'guitar'));
     assert.deepEqual(stored.pauses, [{ from: '2026-11-21', to: '2026-11-23' }]);
     assert.equal(await p.getByRole('checkbox', { name: /^Sun 22 Nov/ }).getAttribute('aria-label'), 'Sun 22 Nov, paused');
+    await p.getByRole('button', { name: 'Close' }).first().click();
+    await p.getByText('Practice guitar').first().waitFor();
+    await p.waitForTimeout(600);
+    if (shots) await p.screenshot({ path: `${shots}/paused-line.png` });
     await ctx.close();
   }
 
