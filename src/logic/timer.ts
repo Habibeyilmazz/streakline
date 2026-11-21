@@ -30,14 +30,19 @@ export function formatClock(ms: number): string {
   return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
 }
 
+// A day of margin inside 1970-01-01..2199-12-31, so the local date is valid in every zone.
+const EARLIEST_END = Date.UTC(1970, 0, 2);
+const LATEST_END = Date.UTC(2199, 11, 30);
+
 /** Restores a timer saved by an earlier run of the app; anything malformed becomes null. */
 export function validateTimer(v: unknown): Timer | null {
   if (typeof v !== 'object' || v === null) return null;
   const t = v as Record<string, unknown>;
   const num = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x) && x >= 0;
   if (t.kind !== 'focus' && t.kind !== 'break') return null;
-  if (!num(t.minutes) || t.minutes < 1 || t.minutes > 180 || !num(t.remainingMs)) return null;
-  if (t.endsAt !== null && !num(t.endsAt)) return null;
+  // Finishing turns minutes and endsAt into a session, so they must pass validateData's rules (whole minutes, a day before 2200).
+  if (!Number.isInteger(t.minutes) || !num(t.minutes) || t.minutes < 1 || t.minutes > 180 || !num(t.remainingMs)) return null;
+  if (t.endsAt !== null && !(num(t.endsAt) && t.endsAt > EARLIEST_END && t.endsAt < LATEST_END)) return null;
   if (t.habitId !== null && typeof t.habitId !== 'string') return null;
   return { kind: t.kind, habitId: t.habitId, minutes: t.minutes, endsAt: t.endsAt, remainingMs: Math.min(t.remainingMs, t.minutes * 60_000) };
 }

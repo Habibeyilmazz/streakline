@@ -1,5 +1,6 @@
 import { validateData } from './backup';
 import { Action, State, reducer } from './reducer';
+import { validateTimer } from './timer';
 import { EMPTY_DATA, Habit } from './types';
 
 const read: Habit = { id: 'read', name: 'Read', color: 0, schedule: { kind: 'daily' }, createdOn: '2026-11-01', reminder: null };
@@ -122,6 +123,17 @@ describe('focus timer', () => {
     const s = run([{ type: 'timer/start', kind: 'focus', habitId: 'ghost', now: NOON }, { type: 'timer/finish', sessionId: 's1' }], base);
     expect(s.data.sessions).toEqual([{ id: 's1', habitId: null, day: '2026-11-21', minutes: 25 }]);
   });
+});
+
+test('a tampered stored timer cannot finish into data the app refuses to load', () => {
+  // The timer is read back from device storage, a trust boundary like an imported file.
+  const saved = { kind: 'focus', habitId: 'read', minutes: 25, endsAt: NOON, remainingMs: 1_500_000 };
+  for (const tampered of [{ ...saved, minutes: 2.5 }, { ...saved, endsAt: 1e20 }, { ...saved, endsAt: Date.UTC(2300, 0, 1) }, { ...saved, endsAt: 0 }]) {
+    const timer = validateTimer(tampered);
+    if (timer === null) continue; // refusing it outright is fine
+    const s = run([{ type: 'timer/finish', sessionId: 's1' }], { ...base, timer });
+    expect(() => validateData(JSON.parse(JSON.stringify(s.data)))).not.toThrow();
+  }
 });
 
 test('reflections are trimmed; saving three blanks removes the day', () => {
