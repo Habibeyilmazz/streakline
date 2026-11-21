@@ -60,8 +60,8 @@ function Shell() {
           {tab === 'Settings' && <Settings version={version} />}
         </View>
 
-        <View accessibilityRole="tablist" style={{ borderTopWidth: 1, borderColor: theme.line, backgroundColor: theme.surface, paddingBottom: insets.bottom }}>
-          <View style={{ flexDirection: 'row', width: '100%', maxWidth: 560, alignSelf: 'center' }}>
+        <View role="navigation" aria-label="Sections" style={{ borderTopWidth: 1, borderColor: theme.line, backgroundColor: theme.surface, paddingBottom: insets.bottom }}>
+          <View accessibilityRole="tablist" style={{ flexDirection: 'row', width: '100%', maxWidth: 560, alignSelf: 'center' }}>
             {TABS.map((name) => {
               const selected = tab === name;
               const live = name === 'Focus' && timer !== null;

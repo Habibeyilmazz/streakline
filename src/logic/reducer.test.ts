@@ -163,6 +163,15 @@ test('replacing all data also clears the timer', () => {
   expect(s).toEqual({ data: EMPTY_DATA, timer: null });
 });
 
+test('adopting another tab\'s data keeps the running timer; adopting its timer keeps the data', () => {
+  const running = run([{ type: 'timer/start', kind: 'focus', habitId: 'read', now: NOON }], base);
+  const withData = run([{ type: 'data/adopt', data: { ...EMPTY_DATA, habits: [] } }], running);
+  expect(withData.timer).toEqual(running.timer);
+  expect(withData.data.habits).toEqual([]);
+  const stopped = run([{ type: 'timer/adopt', timer: null }], running);
+  expect(stopped).toEqual({ data: base.data, timer: null });
+});
+
 test('the reducer never mutates its input', () => {
   const frozen = JSON.stringify(base);
   run([

@@ -85,13 +85,14 @@ export function StoreProvider({ initial, children }: { initial: State; children:
     );
   }, [data, timer]);
 
-  // Web only: another tab saved new data. Adopt it instead of overwriting it with ours.
+  // Web only: another tab saved new data or a new timer. Adopt it instead of overwriting it with ours.
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
     const onStorage = (e: StorageEvent) => {
-      if (e.key !== DATA_KEY || !e.newValue) return;
+      if ((e.key !== DATA_KEY && e.key !== TIMER_KEY) || !e.newValue) return;
       try {
-        dispatch({ type: 'data/replace', data: validateData(JSON.parse(e.newValue)) });
+        const value = JSON.parse(e.newValue);
+        dispatch(e.key === DATA_KEY ? { type: 'data/adopt', data: validateData(value) } : { type: 'timer/adopt', timer: validateTimer(value) });
       } catch {
         // unreadable data from another tab is ignored; this tab keeps its own
       }

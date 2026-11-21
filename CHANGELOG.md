@@ -5,6 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Performance and accessibility pass (round 8)
+
+Measured first (web build, headless Chromium at 390x844, this laptop; `node e2e/perf.mjs` reproduces it, `axe-core` 4.10 was run by hand on every tab and the habit sheet in light and dark).
+
+- Performance: nothing worth fixing. Bundle 546 KB (161 KB gzip) in one JS file plus two 91 KB fonts. With 40 habits, 5 years of check-ins and 3,652 focus sessions (0.9 MB of JSON) the app is interactive in about 130 ms (57 ms empty), a tab switch takes 50-120 ms, one check-in tap 60-100 ms. No change made. `depcheck` and `ts-prune` found no unused dependency or export (`notificationsSupported` is a false positive: platform-specific file).
+- Accessibility: axe reported one best-practice finding on every screen (tab bar outside any landmark). The tab bar is now inside a `navigation` landmark labelled "Sections"; axe now reports 0 violations on all screens, both themes. (The e2e dark-theme check now reads the landmark's parent.)
+- Fixed (web build, a real bug from the reported gaps): a tab adopting data saved by another tab also cleared its own running focus timer (the same action is used by import, which must clear it). New actions `data/adopt` (keeps the timer) and `timer/adopt`. A timer started, paused or stopped in one tab is now picked up by the others. Unit test and e2e stage added; README known-limit updated. Not covered: two tabs finishing the same timer in the same instant can log two sessions.
+- Still true: never run on a phone; no demo GIF; drag and drop not added (up/down buttons stay). Security-review skill not retried: the only new input is a storage event, parsed with the existing validators.
+
 ### Reorder habits (round 7, feature)
 
 Picked by using the app: habits were listed in the order they were created, with no way to change it, and "Reorder habits" was on the roadmap.

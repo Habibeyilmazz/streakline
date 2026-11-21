@@ -83,7 +83,7 @@ src/notifications.ts   schedules the reminder plan with expo-notifications
                        (notifications.web.ts is the empty stand-in for the web build)
 src/files.ts           export (share sheet / download) and import (file picker)
 src/screens/           Today, HabitDetail, HabitEditor, Focus, Reflect, Review, Settings
-e2e/                   Playwright script that drives the web build
+e2e/                   Playwright scripts that drive the web build (run.mjs: behaviour, perf.mjs: timings on large data)
 ```
 
 **Days, time zones and DST.** A check-in is stored as a calendar date (`2026-11-21`), taken from the phone's local clock at the moment you tap. It is never stored as a timestamp, so your history does not shift when you travel or when the clocks change. All day arithmetic runs on whole-day numbers, where every day is the same length, so a 23-hour or 25-hour DST day cannot skip or repeat a date. If you fly across the date line and a calendar date never happens for you, that date counts as missed; that is what a freeze is for.
@@ -130,7 +130,7 @@ Not verified: the app has **not yet been run on a physical phone or a simulator*
 - Weeks start on Monday.
 - Restoring an archived habit counts the days it spent archived as missed; there is no pause that excuses a stretch of days.
 - Import replaces all data; it does not merge.
-- Web build: a second tab picks up changes saved in the first, but a running focus timer is not shared between tabs. There is no sync between devices.
+- Web build: a second tab picks up data and a focus timer saved in the first (the timer's countdown is kept per tab, but start, pause and stop carry over). If two tabs both finish the same timer in the same instant it can log two sessions. There is no sync between devices.
 - Reminder times are typed (`7:30` or `07:30`, 24-hour); there is no time picker.
 
 ## Roadmap

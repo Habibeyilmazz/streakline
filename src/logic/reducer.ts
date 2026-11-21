@@ -23,7 +23,10 @@ export type Action =
   | { type: 'timer/resume'; now: number }
   | { type: 'timer/stop' }
   | { type: 'timer/finish'; sessionId: string }
-  | { type: 'data/replace'; data: Data };
+  | { type: 'data/replace'; data: Data }
+  /** Another web tab saved: take its data or its timer, leave the other part alone. */
+  | { type: 'data/adopt'; data: Data }
+  | { type: 'timer/adopt'; timer: Timer | null };
 
 const without = <T>(rec: Record<string, T>, key: string) => Object.fromEntries(Object.entries(rec).filter(([k]) => k !== key));
 const toggled = (list: readonly DayKey[] = [], day: DayKey) => (list.includes(day) ? list.filter((d) => d !== day) : [...list, day].sort());
@@ -145,5 +148,11 @@ export function reducer(state: State, action: Action): State {
 
     case 'data/replace':
       return { data: action.data, timer: null };
+
+    case 'data/adopt':
+      return { ...state, data: action.data };
+
+    case 'timer/adopt':
+      return { ...state, timer: action.timer };
   }
 }

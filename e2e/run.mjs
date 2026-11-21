@@ -306,7 +306,7 @@ try {
   await page.getByRole('radio', { name: 'Dark' }).click();
   assert.equal(await page.getByRole('radio', { name: 'Dark' }).getAttribute('aria-checked'), 'true');
   await tab('Today').click();
-  const bg = await page.evaluate(() => getComputedStyle(document.querySelector('[role="tablist"]').parentElement).backgroundColor);
+  const bg = await page.evaluate(() => getComputedStyle(document.querySelector('[role="navigation"]').parentElement).backgroundColor);
   assert.equal(bg, 'rgb(18, 24, 31)');
   await shot('today-dark');
 
@@ -349,14 +349,24 @@ try {
   await seen(text('Nothing to track yet.'));
   assert.equal(await page.evaluate(() => localStorage.getItem('streakline/unreadable')), damaged);
 
-  stage('a second tab saves a habit: the first tab shows it instead of overwriting it');
+  stage('a second tab saves a habit: the first tab shows it and keeps its focus timer');
+  await tab('Focus').click();
+  await button('Start 25 minute focus').click();
+  await button('Pause').click();
+  await seen(text('Paused'));
   const other = await context.newPage();
   await other.goto(`http://127.0.0.1:${PORT}/`);
   await other.getByRole('button', { name: 'Add a habit', exact: true }).click();
   await other.getByLabel('Name').fill('Made in tab two');
   await other.getByRole('button', { name: 'Add habit', exact: true }).click();
-  await seen(page.getByText('Made in tab two'));
+  await other.getByRole('tab', { name: 'Focus' }).click();
+  await seen(other.getByText('Paused')); // the timer from the first tab is loaded
   await other.close();
+  await seen(text('Paused')); // adopting the other tab's data did not wipe the timer
+  await tab('Today').click();
+  await seen(page.getByText('Made in tab two'));
+  await tab('Focus').click();
+  await button('Stop').click();
 
   assert.deepEqual(problems, []);
   console.log('e2e passed');
