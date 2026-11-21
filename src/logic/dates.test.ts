@@ -1,4 +1,4 @@
-import { addDays, dayKey, dayNumber, diffDays, eachDay, isDayKey, rangeLabel, weekStart, weekday } from './dates';
+import { addDays, dayKey, dayNumber, eachDay, isDayKey, rangeLabel, weekStart, weekday } from './dates';
 
 // `npm run test:zones` runs this file under several TZ values; every test
 // here must hold in all of them.
@@ -76,13 +76,6 @@ describe('day arithmetic never depends on the clock', () => {
     expect(k).toBe('2027-01-01');
   });
 
-  test('diffDays', () => {
-    expect(diffDays('2026-03-07', '2026-03-09')).toBe(2);
-    expect(diffDays('2026-11-21', '2026-11-21')).toBe(0);
-    expect(diffDays('2026-11-21', '2026-11-20')).toBe(-1);
-    expect(diffDays('2024-01-01', '2025-01-01')).toBe(366);
-  });
-
   test('weekday matches the real calendar', () => {
     expect(weekday('1970-01-01')).toBe(4); // Thursday
     expect(weekday('2026-11-21')).toBe(6); // Saturday
@@ -109,6 +102,7 @@ describe('day arithmetic never depends on the clock', () => {
   test('dayNumber is consistent with addDays', () => {
     expect(dayNumber('1970-01-01')).toBe(0);
     expect(dayNumber(addDays('2026-11-21', 40))).toBe(dayNumber('2026-11-21') + 40);
+    expect(dayNumber('2025-01-01') - dayNumber('2024-01-01')).toBe(366); // leap year
   });
 });
 

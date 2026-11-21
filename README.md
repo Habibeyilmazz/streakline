@@ -20,7 +20,7 @@ The screenshots are taken from the running app (its web build, at 390x844) by th
 
 ## Quickstart
 
-You need Node 20 or newer and a phone with [Expo Go](https://expo.dev/go) installed (it must support Expo SDK 58).
+You need Node 22.13 or newer and a phone with [Expo Go](https://expo.dev/go) installed (it must support Expo SDK 58).
 
 ```sh
 git clone https://github.com/Habibeyilmazz/streakline.git
@@ -94,7 +94,7 @@ CI runs all of the above, `expo-doctor`, and a production JavaScript bundle for 
 
 ## What has and has not been verified
 
-Verified by running it: the logic (174 unit tests, in five time zones), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, dark theme, delete, midnight rollover, damaged-data recovery), and that the app bundles for iOS and Android.
+Verified by running it: the logic (173 unit tests, in five time zones), the type check, `expo-doctor`, the complete user flow in the web build (add, check in, reload, import, freeze, edit, timer, reflection, review, export, dark theme, delete, midnight rollover, damaged-data recovery), that the app bundles for iOS and Android, and that `npx expo start` in a fresh clone serves the Expo Go manifest and the iOS bundle.
 
 Not verified: the app has **not yet been run on a physical phone or a simulator**. The parts that only exist on a phone (notifications, haptics, the share sheet for export, the native file picker for import, safe areas and keyboard behaviour) are written against the documented Expo SDK 58 APIs but are untested on a device. Please open an issue if something misbehaves.
 

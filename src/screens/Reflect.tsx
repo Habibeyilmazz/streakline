@@ -34,7 +34,7 @@ export function Reflect() {
     if (latest.current.draft.some((a) => a.trim())) dispatch({ type: 'reflection/save', day: shownDay.current, answers: latest.current.draft });
     shownDay.current = today;
     setDraft(data.reflections[today]?.answers ?? EMPTY);
-  }, [today]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [today]);
 
   const earlier = Object.keys(data.reflections).filter((d) => d < today).sort().reverse().slice(0, 30);
 

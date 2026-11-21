@@ -32,11 +32,6 @@ export function addDays(k: DayKey, n: number): DayKey {
   return fromDayNumber(dayNumber(k) + n);
 }
 
-/** b - a in whole days. */
-export function diffDays(a: DayKey, b: DayKey): number {
-  return dayNumber(b) - dayNumber(a);
-}
-
 /** 0 = Sunday ... 6 = Saturday, matching Date#getDay. */
 export function weekday(k: DayKey): number {
   // 1970-01-01 was a Thursday (4).

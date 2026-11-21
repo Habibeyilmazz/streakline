@@ -20,7 +20,7 @@ First version. Expo SDK 58, React Native 0.88, TypeScript.
 - JSON export and import with strict validation; import asks before replacing.
 - Recovery screen when stored data fails validation: save a copy of the raw data before starting empty.
 - Light / dark / system theme, haptics, accessibility roles and labels.
-- 174 jest tests for the pure logic in `src/logic/`, run under five time zones (`npm run test:zones`).
+- 173 jest tests for the pure logic in `src/logic/`, run under five time zones (`npm run test:zones`).
 - Playwright end-to-end script (`e2e/run.mjs`) against the exported web build; it also produces the README screenshots.
 - GitHub Actions CI: typecheck, tests, expo-doctor, web build, iOS/Android bundle, end-to-end.
 

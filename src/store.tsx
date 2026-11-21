@@ -99,7 +99,7 @@ export function StoreProvider({ initial, children }: { initial: State; children:
     check();
     const id = setInterval(check, 500);
     return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Keyed on endsAt alone: it identifies the running timer.
   }, [endsAt]);
 
   const planKey = JSON.stringify(reminderPlan(data));
