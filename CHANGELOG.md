@@ -5,6 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Reliability pass (round 5, tests)
+
+Tried to break the logic with odd input; most of it held.
+
+- Fixed: a backup file saved with a UTF-8 byte-order mark (some Windows editors add one) was refused as "not valid JSON". `parseBackup` now strips it.
+- Added: a seeded random-action test (60 sequences of 60 reducer actions, including archive, restore, freezes, timers and a check-in dated after today). After every action the data must pass `validateData` unchanged, streaks must be sane, and the review and heatmap must not throw. It found nothing; it guards the "never save what cannot be loaded" rule. Also a unicode round-trip test for backups.
+- Checked, no change: reported gap "restoring counts archived days as missed" is the documented behaviour (README, on screen), not a bug; a pause feature would be new work. `expo-doctor` and CI are re-run below.
+- Not covered: two browser tabs open on the web build overwrite each other's data (last write wins); a phone runs one instance. Still never run on a phone.
+
 ### Archive a habit (round 4, feature)
 
 Picked by using the app as a newcomer: the only way to stop tracking a habit was to delete it with all its check-ins, or to keep it and collect "missed" days forever.
