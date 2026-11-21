@@ -5,6 +5,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Design pass (round 2)
+
+Looked at every screen in the web build at 390 px and 1280 px, light and dark, empty and filled, plus the keyboard focus ring in dark mode. Most of it already held up; only these changed:
+
+- Settings has the same muted eyebrow over its title as every other screen (it now carries the version).
+- Focus: with no sessions today, "No sessions yet today" is quiet muted text instead of a section heading.
+- Committed the previous round's unfinished accessibility edits after e2e passed with them: a `main` landmark, headings default to level 1 (habit name in the sheet is level 2), the sheet dialog is named by its title, the year heatmap can take keyboard focus and scroll with the arrow keys.
+- README screenshots retaken from the running web build.
+- Left as is, on purpose: the Review legend shows "Done" in the ink colour rather than a habit colour, since the cells use each habit's own colour.
+
 Found by cloning the repository fresh, following the README literally, and reviewing the code.
 
 ### Fixed

@@ -66,7 +66,10 @@ export function Settings({ version }: { version: string }) {
 
   return (
     <Page>
-      <Txt variant="display" accessibilityRole="header">Settings</Txt>
+      <View style={{ gap: 2 }}>
+        <Txt muted>Streakline {version}</Txt>
+        <Txt variant="display" accessibilityRole="header">Settings</Txt>
+      </View>
 
       <Section title="Appearance">
         <ChipRow label="Theme">
@@ -148,7 +151,7 @@ export function Settings({ version }: { version: string }) {
         />
       </Section>
 
-      <Txt variant="small" muted>Streakline {version}. No account, no server, no tracking.</Txt>
+      <Txt variant="small" muted>No account, no server, no tracking.</Txt>
     </Page>
   );
 }

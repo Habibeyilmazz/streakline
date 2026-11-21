@@ -122,17 +122,21 @@ export function Focus() {
   return (
     <Page>
       {body}
-      <Section title={todaySessions.length ? `Today: ${formatMinutes(todayMinutes)} in ${todaySessions.length} ${todaySessions.length === 1 ? 'session' : 'sessions'}` : 'No sessions yet today'}>
-        {todaySessions.map((s, i) => (
-          <View key={s.id}>
-            {i > 0 && <Rule />}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 }}>
-              <Txt>{nameOf(s.habitId) ?? 'No habit'}</Txt>
-              <Txt muted>{formatMinutes(s.minutes)}</Txt>
+      {todaySessions.length === 0 ? (
+        <Txt muted>No sessions yet today</Txt>
+      ) : (
+        <Section title={`Today: ${formatMinutes(todayMinutes)} in ${todaySessions.length} ${todaySessions.length === 1 ? 'session' : 'sessions'}`}>
+          {todaySessions.map((s, i) => (
+            <View key={s.id}>
+              {i > 0 && <Rule />}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 }}>
+                <Txt>{nameOf(s.habitId) ?? 'No habit'}</Txt>
+                <Txt muted>{formatMinutes(s.minutes)}</Txt>
+              </View>
             </View>
-          </View>
-        ))}
-      </Section>
+          ))}
+        </Section>
+      )}
     </Page>
   );
 }
