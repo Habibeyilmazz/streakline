@@ -5,6 +5,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Design pass (round 10)
+
+Looked at every tab of the web build in light and dark at 390 and 1280 px, with the synthetic fixture and with no data, plus the habit sheet, the editor and the keyboard focus ring (`node e2e/tour.mjs <dir> [empty]` reproduces the tab screenshots). The screens already held up from round 2: consistent type scale, eyebrow over every title, empty states with one clear action, a visible focus ring in both themes, the sheet's slide turned off under reduced motion, tabular digits on the timer. No restyling was done, so the README screenshots are unchanged (the e2e `--screenshots` run rewrote them byte for byte).
+
+- Fixed (a reported gap): reminders beyond the 60 a phone keeps were dropped silently. `habitsOverReminderLimit` names the habits that lose some or all of their reminders; Settings lists them and the habit's editor says so, in the danger colour. Unit test added. Not seen on screen: both warnings only render where notifications are supported (the phone app), which was not run.
+- Changed: the Haptics switch is hidden on the web build, where it did nothing.
+- Added: `e2e/tour.mjs`, screenshots of every tab for design review.
+- Still true: never run on a phone; no demo GIF; no drag and drop (up/down buttons); security-review skill and Lighthouse not run.
+
 ### First-run review (round 9)
 
 Cloned the repository fresh and followed the README literally on Node 22: `npm install`, `npx expo start` (Expo Go manifest, iOS and Android dev bundles served), `npm run web` (app loads at 390x844, no console errors), and every command under Development. All of it worked; nothing in the quickstart needed fixing.
