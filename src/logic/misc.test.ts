@@ -1,4 +1,4 @@
-import { MAX_REMINDERS, normalizeTime, parseTime, reminderPlan } from './reminders';
+import { habitsOverReminderLimit, MAX_REMINDERS, normalizeTime, parseTime, reminderPlan } from './reminders';
 import { formatClock, isFinished, pauseTimer, remainingMs, resumeTimer, startTimer, validateTimer } from './timer';
 import { DEFAULT_SETTINGS, Data, Habit } from './types';
 
@@ -45,6 +45,12 @@ describe('reminderPlan', () => {
     const plan = reminderPlan(data(many, '21:00'));
     expect(plan).toHaveLength(MAX_REMINDERS);
     expect(plan[0]).toMatchObject({ title: 'Evening reflection', hour: 21, minute: 0 });
+  });
+  test('names the habits whose reminders do not fit', () => {
+    const many = Array.from({ length: 11 }, (_, i) => h({ id: `h${i}`, name: `H${i}`, schedule: { kind: 'weekdays', days: [1, 2, 3, 4, 5, 6] } }));
+    // 1 reflection + 66 weekday reminders: H9 loses its last day, H10 all six.
+    expect(habitsOverReminderLimit(data(many, '21:00'))).toEqual(['H9', 'H10']);
+    expect(habitsOverReminderLimit(data(many.slice(0, 9), '21:00'))).toEqual([]);
   });
 });
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { WEEKDAYS_SHORT } from '../logic/dates';
-import { normalizeTime } from '../logic/reminders';
+import { habitsOverReminderLimit, MAX_REMINDERS, normalizeTime } from '../logic/reminders';
 import { HABIT_COLOR_COUNT, Habit, MAX_HABITS, MAX_NAME_LENGTH, Schedule } from '../logic/types';
 import { notificationsSupported } from '../notifications';
 import { newId, useStore } from '../store';
@@ -113,16 +113,21 @@ export function HabitEditor({ habit, onDone }: { habit?: Habit; onDone: (deleted
       </Section>
 
       {notificationsSupported ? (
-        <Field
-          label="Reminder"
-          hint="Optional. A notification at this time on the days the habit is due."
-          value={reminder}
-          onChangeText={setReminder}
-          placeholder="07:30"
-          maxLength={5}
-          keyboardType="numbers-and-punctuation"
-          error={tried ? reminderError : null}
-        />
+        <View style={{ gap: 8 }}>
+          <Field
+            label="Reminder"
+            hint="Optional. A notification at this time on the days the habit is due."
+            value={reminder}
+            onChangeText={setReminder}
+            placeholder="07:30"
+            maxLength={5}
+            keyboardType="numbers-and-punctuation"
+            error={tried ? reminderError : null}
+          />
+          {habit && habitsOverReminderLimit(data).includes(habit.name) && (
+            <Txt variant="small" color={t.danger}>A phone keeps at most {MAX_REMINDERS} repeating reminders per app; this habit's do not all fit. Remove reminders from other habits to make room.</Txt>
+          )}
+        </View>
       ) : (
         <Section title="Reminder">
           <Txt variant="small" muted>Reminders need the phone app; a browser tab cannot schedule them.</Txt>

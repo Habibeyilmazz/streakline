@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 
 import { exportBackup, parseBackup } from '../logic/backup';
-import { normalizeTime } from '../logic/reminders';
+import { habitsOverReminderLimit, MAX_REMINDERS, normalizeTime } from '../logic/reminders';
 import { Data, EMPTY_DATA, Settings as SettingsType } from '../logic/types';
 import { pickTextFile, saveTextFile } from '../files';
 import { notificationsAllowed, notificationsSupported, onNotificationsSynced } from '../notifications';
@@ -77,7 +77,10 @@ export function Settings({ version }: { version: string }) {
             <Chip key={o.value} label={o.label} selected={s.theme === o.value} onPress={() => set({ theme: o.value })} />
           ))}
         </ChipRow>
-        <ToggleRow label="Haptics" hint="A light tap when you check in or a timer ends." value={s.haptics} onChange={(haptics) => set({ haptics })} />
+        {/* A browser cannot vibrate the phone, so the switch would do nothing there. */}
+        {Platform.OS !== 'web' && (
+          <ToggleRow label="Haptics" hint="A light tap when you check in or a timer ends." value={s.haptics} onChange={(haptics) => set({ haptics })} />
+        )}
       </Section>
 
       <Section title="Focus timer">
@@ -108,6 +111,11 @@ export function Settings({ version }: { version: string }) {
           />
           {!allowed && (s.reflectionReminder || data.habits.some((h) => h.reminder && !h.archivedOn)) && (
             <Txt variant="small" color={t.danger}>Notifications are turned off for this app in your phone's settings, so reminders will not appear.</Txt>
+          )}
+          {habitsOverReminderLimit(data).length > 0 && (
+            <Txt variant="small" color={t.danger}>
+              A phone keeps at most {MAX_REMINDERS} repeating reminders per app, so these habits miss some or all of theirs: {habitsOverReminderLimit(data).join(', ')}.
+            </Txt>
           )}
         </View>
       ) : (

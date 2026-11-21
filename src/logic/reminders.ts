@@ -35,19 +35,29 @@ export const MAX_REMINDERS = 60;
  * cannot run in the background to check.
  */
 export function reminderPlan(data: Data): PlannedReminder[] {
-  const plan: PlannedReminder[] = [];
+  return allReminders(data).slice(0, MAX_REMINDERS).map(({ habitId, ...r }) => r);
+}
+
+/** Names of habits that lose some or all of their reminders to MAX_REMINDERS. */
+export function habitsOverReminderLimit(data: Data): string[] {
+  const over = allReminders(data).slice(MAX_REMINDERS);
+  return data.habits.filter((h) => over.some((r) => r.habitId === h.id)).map((h) => h.name);
+}
+
+function allReminders(data: Data): (PlannedReminder & { habitId?: string })[] {
+  const plan: (PlannedReminder & { habitId?: string })[] = [];
   const reflection = data.settings.reflectionReminder && parseTime(data.settings.reflectionReminder);
   if (reflection) plan.push({ title: 'Evening reflection', body: 'Two minutes: three questions about today.', ...reflection });
 
   for (const h of data.habits) {
     const at = !h.archivedOn && h.reminder && parseTime(h.reminder);
     if (!at) continue;
-    const base = { title: h.name, body: 'Time to check in.', ...at };
+    const base = { title: h.name, body: 'Time to check in.', ...at, habitId: h.id };
     if (h.schedule.kind === 'weekdays' && h.schedule.days.length < 7) {
       for (const weekday of h.schedule.days) plan.push({ ...base, weekday });
     } else {
       plan.push(base);
     }
   }
-  return plan.slice(0, MAX_REMINDERS);
+  return plan;
 }

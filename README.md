@@ -60,7 +60,7 @@ Reasons to pick Streakline: one app for habits, a focus timer tied to a habit an
 - **Focus timer** (15, 25, 45 or 60 minutes) tied to a habit. Finishing a session logs the minutes and, if you want, checks the habit in. It keeps correct time while the app is in the background.
 - **Evening reflection**: three prompts, about two minutes.
 - **Weekly review** with plain counts: kept, missed, still open, frozen, focus minutes, reflections, and the week before for comparison.
-- **Local notifications**: a reminder time per habit, one for the reflection, and one when the timer ends.
+- **Local notifications**: a reminder time per habit, one for the reflection, and one when the timer ends. A phone keeps at most 60 repeating reminders per app (a habit on certain days needs one per day); past that, Settings and the habit's editor name the habits that miss theirs.
 - **Archive** a habit you have stopped (or put on hold): it leaves Today, reminders, the focus timer and the weekly review from that day on, and its history, streaks and heatmap stay. Archived habits are listed at the bottom of Today; open one to restore it. Deleting is still there for habits you want gone with their history.
 - **Reorder** habits with Reorder on Today: move each one up or down. Today (due habits first), the focus timer's list and the weekly review follow that order. The buttons work with a screen reader and a keyboard; there is no drag and drop.
 - **Backup**: export everything as one JSON file, import it on another device. Imports are validated and ask before replacing anything.
@@ -83,7 +83,7 @@ src/notifications.ts   schedules the reminder plan with expo-notifications
                        (notifications.web.ts is the empty stand-in for the web build)
 src/files.ts           export (share sheet / download) and import (file picker)
 src/screens/           Today, HabitDetail, HabitEditor, Focus, Reflect, Review, Settings
-e2e/                   Playwright scripts that drive the web build (run.mjs: behaviour, perf.mjs: timings on large data)
+e2e/                   Playwright scripts that drive the web build (run.mjs: behaviour, perf.mjs: timings on large data, tour.mjs: every tab in light and dark at 390 and 1280 px for design review)
 ```
 
 **Days, time zones and DST.** A check-in is stored as a calendar date (`2026-11-21`), taken from the phone's local clock at the moment you tap. It is never stored as a timestamp, so your history does not shift when you travel or when the clocks change. All day arithmetic runs on whole-day numbers, where every day is the same length, so a 23-hour or 25-hour DST day cannot skip or repeat a date. If you fly across the date line and a calendar date never happens for you, that date counts as missed; that is what a freeze is for.
@@ -110,6 +110,7 @@ npm run test:zones    # the same tests under UTC, New York, Istanbul, Kolkata an
 npm run build:web     # export the web build to dist/
 npm run e2e           # drive dist/ with Playwright; run build:web first (needs: npx playwright install chromium)
 npm run e2e -- --screenshots   # also rewrite docs/screenshots/
+node e2e/tour.mjs <dir> [empty]  # screenshots of every tab, light and dark, phone and desktop width
 ```
 
 `npm test` reports five tests as skipped: they are about one time zone each (DST in New York and Auckland, the half-hour offset in Kolkata) and only run when `TZ` is that zone, which is what `test:zones` does.
